@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Year</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Montserrat', 'system-ui', 'sans-serif'] },
+          colors: {
+            ink: { 50: '#f7f7f8', 100: '#eeeef0', 200: '#d9d9de', 300: '#b8b8c0', 400: '#91919d', 500: '#747481', 600: '#5e5e69', 700: '#4d4d56', 800: '#424249', 900: '#3a3a40' },
+            accent: { 50: '#f0f7ff', 100: '#e0effe', 500: '#2563eb', 600: '#1d4ed8' },
+            audit: { 900: '#0f172a', 800: '#1e293b', 700: '#334155', 600: '#475569', 500: '#64748b' }
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    /* Reserve scrollbar space so layout doesn't shift when toggling planner/audit */
+    html { scrollbar-gutter: stable; }
+    /* Custom component styles (plain CSS to avoid linter warnings for @apply) */
+    .day-cell {
+      min-height: 2.5rem;
+      border: 1px solid #d9d9de;
+      border-radius: 0.5rem;
+      padding: 0.25rem;
+      color: #4d4d56;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: background-color 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: flex-start;
+      container-type: size;
+      container-name: day-cell;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .day-cell:hover { background-color: #eeeef0; border-color: #b8b8c0; }
+    @media (min-width: 640px) {
+      .day-cell { min-height: 3rem; padding: 0.375rem; }
+    }
+    /* 1 per row: keep date cells more square-like and fit month in one screen height */
+    .months-grid.grid-cols-1 .day-cell {
+      aspect-ratio: 1.2;
+    }
+    .day-cell.empty {
+      background-color: #f7f7f8;
+      cursor: default;
+    }
+    .day-cell.empty:hover { background-color: #f7f7f8; border-color: #d9d9de; }
+    .day-cell.selected { background-color: #e0effe; border-color: #2563eb; }
+    .day-cell.today { border-width: 2px; border-color: #1a1a1a; }
+    .day-cell.today .day-cell-date-row > span:first-child { font-weight: 700; }
+    .event-dot {
+      width: 0.375rem; height: 0.375rem;
+      border-radius: 9999px;
+      flex-shrink: 0;
+    }
+    .event-chip {
+      display: block;
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.6875rem;
+      line-height: 1.2;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      border-left: 3px solid transparent;
+      color: #3a3a40;
+    }
+    @media (min-width: 640px) {
+      .event-dot { width: 0.5rem; height: 0.5rem; }
+      .event-chip { font-size: 0.75rem; padding: 0.2rem 0.4rem; }
+    }
+    .event-chips-wrapper {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+      flex: 1;
+    }
+    .event-dots-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      align-content: flex-start;
+      gap: 0.125rem 0.25rem;
+    }
+    .event-dots-row {
+      width: 100%;
+      min-width: 0;
+    }
+    .day-cell-inner {
+      min-width: 0;
+      width: 100%;
+    }
+    .day-cell-date-row {
+      width: 100%;
+      min-width: 0;
+    }
+    .event-more-badge {
+      color: #424249;
+      font-size: 0.875rem;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      visibility: visible;
+    }
+    .day-cell.has-chip-fallback .event-dots-wrapper { display: none; }
+    .day-cell.has-chip-fallback .event-chips-wrapper { display: flex; }
+    /* Single event in dot view: colour whole cell with pastel + primary accent (like chips) */
+    .day-cell.has-single-event-dot:not(.has-chip-fallback):not(.selected):not(.today) {
+      background-color: var(--single-event-pastel);
+      border-left: 3px solid var(--single-event-primary);
+    }
+    /* 6 per row: smaller date number so two digits (e.g. 28) fit */
+    .months-grid.grid-cols-6 .day-cell .day-num {
+      font-size: 0.65rem;
+      line-height: 1.2;
+    }
+    @media (min-width: 640px) {
+      .months-grid.grid-cols-6 .day-cell .day-num {
+        font-size: 0.7rem;
+      }
+    }
+    /* When cell is narrow (e.g. 3–4 per row), show dots instead of chips */
+    @container day-cell (max-inline-size: 6.5rem) {
+      .day-cell.has-chip-fallback .event-chips-wrapper { display: none !important; }
+      .day-cell.has-chip-fallback .event-dots-wrapper { display: flex !important; }
+      .day-cell.has-chip-fallback.has-single-event-dot:not(.selected):not(.today) {
+        background-color: var(--single-event-pastel);
+        border-left: 3px solid var(--single-event-primary);
+      }
+    }
+    .print-legend-only-container { display: none; }
+    #addEventToSelectedBtn.add-event-btn-empty { background-color: #e0effe; color: #1d4ed8; }
+    #addEventToSelectedBtn.add-event-btn-empty:hover { background-color: #c7e0fe; }
+    #addEventToSelectedBtn.add-event-btn-active { background-color: #2563eb; color: #fff; }
+    #addEventToSelectedBtn.add-event-btn-active:hover { background-color: #1d4ed8; }
+    @media print {
+      @page { size: 17in 11in; margin: 0.6in; }
+      :root { --print-h: 9.8in; --print-w: 15.8in; }
+      /* Full-page print: no scrollbars, calendar fills printable area */
+      html {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        margin: 0 !important; padding: 0 !important;
+        width: var(--print-w) !important; height: auto !important;
+        overflow: hidden !important;
+        background: #fff !important;
+      }
+      body {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        margin: 0 !important; padding: 0 !important;
+        width: var(--print-w) !important; max-width: none !important;
+        min-height: var(--print-h) !important;
+        overflow: hidden !important;
+        background: #fff !important;
+      }
+      body * { box-sizing: border-box !important; }
+      .no-print { display: none !important; }
+      /* Force calendar container to full printable width (no flex/sidebar influence) */
+      #app { width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+      #app > div { width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+      #appContent { width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+      #viewSwitchWrapper { width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+      #plannerContent { width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+      #plannerContent > div { display: block !important; width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+      #plannerContent main { width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; flex: none !important; }
+      .months-grid {
+        width: var(--print-w) !important; max-width: none !important;
+        padding: 0 !important; margin: 0 !important;
+        background: #fff !important; overflow: visible !important;
+      }
+      .month-card {
+        break-inside: avoid; page-break-inside: avoid;
+        overflow: hidden !important; box-sizing: border-box !important;
+        display: flex !important; flex-direction: column !important;
+        border-color: #e5e5e7 !important;
+      }
+      .month-card h2 { font-weight: 700 !important; letter-spacing: -0.02em !important; }
+      .month-card > div:first-child { flex-shrink: 0 !important; }
+      .month-card > div:last-child { flex: 1 !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; }
+      .month-card > div:last-child > div:first-child { flex-shrink: 0 !important; }
+      .month-card > div:last-child > div:nth-child(n+2) { flex: 1 !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; }
+      .month-card .day-cell-inner { justify-content: flex-start !important; align-items: flex-start !important; }
+      .month-card .day-cell-inner > div:first-child { flex-shrink: 0 !important; }
+      .month-card .event-chips-wrapper { flex-shrink: 0 !important; overflow: hidden !important; }
+      .month-card .event-more-badge::after { content: " more"; }
+      .day-cell.today { box-shadow: none !important; background-color: #f7f7f8 !important; border-color: #d9d9de !important; }
+      /* 1 wide: single column, one month per page, full printable width and height */
+      [data-print-cols="1"] .months-grid {
+        grid-template-columns: 1fr !important; grid-auto-rows: var(--print-h) !important;
+        gap: 0 !important; height: auto !important;
+        width: var(--print-w) !important; max-width: none !important;
+      }
+      [data-print-cols="1"] .month-card {
+        width: 100% !important; max-width: var(--print-w) !important;
+        height: var(--print-h) !important; min-height: var(--print-h) !important; max-height: var(--print-h) !important;
+        page-break-after: always !important;
+        padding: 0.2in 0.3in !important; border-radius: 0.4rem !important;
+      }
+      [data-print-cols="1"] .month-card:last-child { page-break-after: auto !important; }
+      [data-print-cols="1"] .month-card .day-cell { aspect-ratio: 1.2 !important; min-height: 0 !important; overflow: hidden !important; }
+      /* 2–6 wide: N columns, full width, fixed row height, page break after each row */
+      [data-print-cols="2"] .months-grid, [data-print-cols="3"] .months-grid, [data-print-cols="4"] .months-grid, [data-print-cols="5"] .months-grid, [data-print-cols="6"] .months-grid { width: var(--print-w) !important; max-width: none !important; }
+      [data-print-cols="2"] .months-grid { grid-template-columns: repeat(2, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.15in !important; }
+      [data-print-cols="3"] .months-grid { grid-template-columns: repeat(3, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.12in !important; }
+      [data-print-cols="4"] .months-grid { grid-template-columns: repeat(4, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.1in !important; }
+      [data-print-cols="5"] .months-grid { grid-template-columns: repeat(5, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.08in !important; }
+      [data-print-cols="6"] .months-grid { grid-template-columns: repeat(6, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.06in !important; }
+      [data-print-cols="2"] .month-card, [data-print-cols="3"] .month-card, [data-print-cols="4"] .month-card, [data-print-cols="5"] .month-card, [data-print-cols="6"] .month-card {
+        width: 100% !important; height: 100% !important; min-height: var(--print-h) !important;
+        padding: 0.15in 0.18in !important; border-radius: 0.3rem !important;
+      }
+      [data-print-cols="3"] .month-card { padding: 0.12in 0.14in !important; }
+      [data-print-cols="4"] .month-card { padding: 0.1in 0.12in !important; }
+      [data-print-cols="5"] .month-card { padding: 0.08in 0.1in !important; }
+      [data-print-cols="6"] .month-card { padding: 0.06in 0.08in !important; }
+      [data-print-cols="2"] .month-card:nth-child(2n), [data-print-cols="3"] .month-card:nth-child(3n), [data-print-cols="4"] .month-card:nth-child(4n), [data-print-cols="5"] .month-card:nth-child(5n), [data-print-cols="6"] .month-card:nth-child(6n) { page-break-after: always !important; }
+      [data-print-cols="2"] .month-card:last-child, [data-print-cols="3"] .month-card:last-child, [data-print-cols="4"] .month-card:last-child, [data-print-cols="5"] .month-card:last-child, [data-print-cols="6"] .month-card:last-child { page-break-after: auto !important; }
+      [data-print-cols="2"] .month-card .day-cell, [data-print-cols="3"] .month-card .day-cell, [data-print-cols="4"] .month-card .day-cell, [data-print-cols="5"] .month-card .day-cell, [data-print-cols="6"] .month-card .day-cell { aspect-ratio: 1.2 !important; min-height: 0 !important; overflow: hidden !important; }
+      [data-print-legend-only="true"] #app { display: none !important; }
+      [data-print-legend-only="true"] .print-legend-only-container { display: block !important; }
+    }
+    .view-toggle-group { display: inline-flex; border: 1px solid #d9d9de; border-radius: 0.5rem; overflow: hidden; }
+    .view-toggle-btn { border: none; border-radius: 0; border-right: 1px solid #d9d9de; }
+    .view-toggle-btn:last-child { border-right: none; }
+    .view-toggle-btn[aria-pressed="true"] { background: #e8e8ec; color: #1a1a1a; font-weight: 600; }
+    .app-title-editable:empty::before { content: attr(data-placeholder); color: #91919d; }
+    .view-block { will-change: transform; }
+    .view-block-planner-off { position: absolute; left: 0; top: 0; width: 100%; transform: translateX(-100%); pointer-events: none; }
+    .view-block-audit { position: absolute; left: 0; top: 0; width: 100%; transform: translateX(100%); }
+    .view-block-audit.view-block-audit-visible { position: relative; transform: translateX(0); }
+    .view-block-audit.view-block-audit-off { transform: translateX(-100%); }
+    .view-block-life { position: absolute; left: 0; top: 0; width: 100%; transform: translateX(100%); }
+    .view-block-life.view-block-life-visible { position: relative; transform: translateX(0); }
+    /* All three tabs use page scroll (scrollbar at viewport edge); prevent any inner scrollbar flash on tab switch */
+    #auditContent, #lifeContent { overflow-y: visible !important; overflow-x: hidden !important; max-height: none !important; height: auto !important; }
+    #auditContent > div, #lifeContent > div { overflow: visible !important; max-height: none !important; }
+    #viewSwitchWrapper { min-height: calc(100vh - 8rem); overflow-x: hidden; overflow-y: visible !important; }
+    #plannerContent > div { padding-bottom: 2rem; padding-right: 2rem; }
+    #lifeGridWrapper { width: 100%; }
+    .life-months-grid { display: grid; grid-template-columns: repeat(36, 1fr); gap: 2px; width: 100%; min-width: 0; min-height: 0; }
+    .life-month-cell { border-radius: 2px; box-sizing: border-box; background: #fff; border: 1px solid #e5e5e7; min-width: 0; min-height: 0; }
+    .life-month-cell.lived { background: #E5E7EB; border-color: #E5E7EB; }
+    .life-month-cell.current { background: #1A73E8; border-color: #1A73E8; box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3); animation: life-month-pulse 2s ease-in-out infinite; }
+    @keyframes life-month-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3); } 50% { box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.15); } }
+    #seasonsContainer { display: flex; flex-direction: column; }
+    .seasons-card.season-inactive { background: #f7f7f8; border-color: #eeeef0; }
+    #seasonsInactiveToggle[aria-expanded="true"] #seasonsInactiveChevron { transform: rotate(180deg); }
+    #lifeFactsToggle[aria-expanded="false"] #lifeFactsChevron { transform: rotate(-90deg); }
+    /* Audit section title hover tooltips */
+    .audit-title-tooltip { position: relative; }
+    .audit-title-tooltip::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 0;
+      top: 100%;
+      margin-top: 0.25rem;
+      padding: 0.5rem 0.75rem;
+      max-width: 20rem;
+      font-size: 0.8125rem;
+      font-weight: 400;
+      line-height: 1.4;
+      color: #424249;
+      background: #fff;
+      border: 1px solid #d9d9de;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      white-space: normal;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s, visibility 0.15s;
+      z-index: 30;
+      pointer-events: none;
+    }
+    .audit-title-tooltip:hover::after { opacity: 1; visibility: visible; }
+  </style>
+</head>
+<body class="font-sans antialiased min-h-screen bg-ink-50">
+  <div id="printLegendOnly" class="print-legend-only-container" aria-hidden="true"></div>
+
+  <!-- Header: title, planner/audit toggle, settings (aligned with legend left, calendar right) -->
+  <div class="sticky top-0 z-50 no-print bg-white/95 backdrop-blur border-b border-ink-100">
+    <div class="max-w-[1920px] mx-auto w-full px-6 sm:px-8 lg:px-10 pt-4 grid grid-cols-[1fr_auto_1fr] items-end gap-4 min-h-0">
+      <h1 id="appTitle" class="app-title-editable text-2xl sm:text-3xl font-bold text-ink-900 shrink-0 leading-none outline-none focus:ring-2 focus:ring-accent-500 focus:ring-inset rounded px-1 -mx-1 min-w-[2ch]" contenteditable="true" spellcheck="false" data-placeholder="My Year" aria-label="Calendar title">My Year</h1>
+      <div class="view-toggle-group justify-self-center self-end" role="tablist" aria-label="View mode">
+        <button type="button" id="viewTogglePlanner" class="view-toggle-btn inline-flex items-center justify-center px-4 py-2.5 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors h-[2.25rem] box-border" aria-pressed="true" aria-label="Plan view">Plan</button>
+        <button type="button" id="viewToggleAudit" class="view-toggle-btn inline-flex items-center justify-center px-4 py-2.5 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors h-[2.25rem] box-border" aria-pressed="false" aria-label="Audit view">Audit</button>
+        <button type="button" id="viewToggleLife" class="view-toggle-btn inline-flex items-center justify-center px-4 py-2.5 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors h-[2.25rem] box-border" aria-pressed="false" aria-label="Reflect view">Reflect</button>
+      </div>
+      <div class="flex justify-end items-center gap-2 self-end">
+        <button type="button" id="settingsBtn" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors h-[2.25rem] box-border shrink-0" aria-label="Settings" title="Settings">
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Settings
+        </button>
+      </div>
+    </div>
+    <div class="h-6 flex-shrink-0" aria-hidden="true"></div>
+  </div>
+
+  <div id="app" class="bg-ink-50 mt-2">
+  <div class="max-w-[1920px] mx-auto py-6 sm:py-8">
+    <div id="appContent" class="w-full max-w-full px-6 sm:px-8 lg:px-10 box-border">
+      <!-- View switch: entire content below header slides (planner = sidebar + calendar | audit = dashboard) -->
+      <div id="viewSwitchWrapper" class="relative overflow-x-hidden w-full">
+        <!-- Planner block: sidebar + calendar in normal flow (full visibility, page scrolls) -->
+        <div id="plannerContent" class="view-block w-full transition-transform duration-500 ease-out">
+          <div class="flex flex-col lg:flex-row gap-6 items-start">
+            <aside id="legendSidebar" class="no-print lg:w-56 xl:w-64 flex-shrink-0 order-2 lg:order-1 pt-0">
+              <div class="sticky top-6 space-y-4 pt-0">
+                <div class="bg-white rounded-xl border border-ink-200 shadow-sm p-3">
+                  <div class="flex flex-wrap gap-2 items-center">
+                    <select id="yearSelect" class="rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer min-w-0 flex-1" aria-label="Start year"></select>
+                    <select id="startMonthSelect" class="rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer min-w-0 flex-1" aria-label="Start month"></select>
+                  </div>
+                  <button type="button" id="calendarControlsToggle" class="mt-2 w-full flex items-center justify-center gap-1 py-1.5 text-xs text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded transition-colors" aria-expanded="false" aria-controls="calendarControlsExpandable">
+                    <span id="calendarControlsToggleLabel">More options</span>
+                    <span id="calendarControlsToggleArrow" class="inline-block transition-transform">▼</span>
+                  </button>
+                  <div id="calendarControlsExpandable" class="hidden pt-2 mt-2 border-t border-ink-100 space-y-2" role="region" aria-label="More calendar options">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-ink-500 w-16 shrink-0">Duration</span>
+                      <select id="durationSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Number of months"></select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-ink-500 w-16 shrink-0">Start</span>
+                      <select id="weekStartSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Start day">
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                      </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-ink-500 w-16 shrink-0">View</span>
+                      <select id="viewStyleSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Months per row">
+                        <option value="1">1 per row</option>
+                        <option value="2">2 per row</option>
+                        <option value="3">3 per row</option>
+                        <option value="4" selected>4 per row</option>
+                        <option value="5">5 per row</option>
+                        <option value="6">6 per row</option>
+                      </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-ink-500 w-16 shrink-0">Holidays</span>
+                      <select id="holidaysSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Holidays">
+                        <option value="none" selected>None</option>
+                        <option value="canada">Canada</option>
+                        <option value="usa">USA</option>
+                      </select>
+                    </div>
+                    <button type="button" id="hidePastMonthsBtn" class="w-full py-1.5 rounded border border-ink-200 text-ink-600 text-xs font-medium hover:bg-ink-100 transition-colors" aria-pressed="false" title="Hide months before the current month">Hide past months</button>
+                    <button type="button" id="hideMonthsPastYearEndBtn" class="w-full py-1.5 rounded border border-ink-200 text-ink-600 text-xs font-medium hover:bg-ink-100 transition-colors" aria-pressed="false" title="Hide months after December of the selected year">Hide months past year end</button>
+                  </div>
+                </div>
+                <div class="bg-white rounded-xl border border-ink-200 shadow-sm p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-ink-800 uppercase tracking-wider">Legend</h2>
+                    <button type="button" id="manageCategoriesBtn" class="text-xs text-ink-500 hover:text-ink-700" title="Manage categories">Edit</button>
+                  </div>
+                  <div id="legendList" class="text-sm text-ink-700">
+                    <ul id="legendListInner" class="space-y-2">
+                      <li id="legendEmpty" class="text-ink-400 italic">No events yet</li>
+                    </ul>
+                  </div>
+                </div>
+                <div id="multiSelectBar" class="flex flex-col gap-3 mt-4 p-3 rounded-xl border border-ink-200 bg-white shadow-sm">
+                  <button type="button" id="addEventToSelectedBtn" class="w-full py-3 rounded-lg text-sm font-semibold transition-colors flex flex-col items-center gap-0.5 add-event-btn-empty">
+                    <span id="addEventToSelectedBtnLabel">Select date</span>
+                    <span id="multiSelectCount" class="text-xs font-normal opacity-90">(0 dates selected)</span>
+                  </button>
+                  <button type="button" id="clearSelectionBtn" class="w-full py-2 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-ink-200 disabled:hover:text-ink-600" title="Deselect all dates" disabled>Clear selection</button>
+                  <button type="button" id="clearEventsFromSelectedBtn" class="w-full py-2 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-ink-200 disabled:hover:text-ink-600" title="Remove events from selected dates" disabled>Delete Events</button>
+                </div>
+                <div id="selectedDateContext" class="mt-4 p-3 rounded-xl border border-ink-200 bg-white shadow-sm hidden">
+                  <h3 id="selectedDateContextTitle" class="text-xs font-semibold uppercase tracking-wider text-ink-500 mb-2">Events on selected date(s)</h3>
+                  <div id="selectedDateContextList" class="text-sm text-ink-700 space-y-2 max-h-48 overflow-y-auto">
+                    <!-- Filled by JS -->
+                  </div>
+                </div>
+              </div>
+            </aside>
+            <main class="flex-1 min-w-0 order-1 lg:order-2 pt-0">
+              <div id="monthsGrid" class="months-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                <!-- Month cards injected by JS -->
+              </div>
+            </main>
+          </div>
+        </div>
+
+        <!-- Audit block: dashboard (slides in from right when active) -->
+        <div id="auditContent" class="view-block view-block-audit absolute left-0 top-0 w-full transition-transform duration-500 ease-out translate-x-full">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- 1. Misogi -->
+            <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-5">
+              <h2 class="text-base font-bold text-ink-800 tracking-tight mb-3"><span class="audit-title-tooltip" data-tooltip="Misogi is a single, massive, once-a-year challenge designed to redefine your limits.">Misogi</span></h2>
+              <div class="mb-4">
+                <p class="text-sm text-ink-600">A misogi is a single, massive, once-a-year challenge designed to push you past your limits—something so hard you might fail, outside your normal routine, but safe.</p>
+              </div>
+              <div class="flex flex-wrap items-end gap-3 mb-4">
+                <div class="flex-1 min-w-0">
+                  <label for="misogiChallengeInput" class="block text-sm font-medium text-ink-700 mb-1">What is your challenge?</label>
+                  <input type="text" id="misogiChallengeInput" placeholder="e.g. Run a 5k in under 30 minutes" class="w-full px-3 py-2 rounded-lg border border-ink-200 text-ink-900 placeholder-ink-400 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 text-sm" />
+                </div>
+                <div class="shrink-0 w-[8.5rem]">
+                  <label for="misogiTargetDate" class="block text-sm font-medium text-ink-700 mb-1">Target date</label>
+                  <input type="date" id="misogiTargetDate" class="w-full px-3 py-2 rounded-lg border border-ink-200 text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 text-sm" aria-label="Misogi target date" />
+                </div>
+                <div class="shrink-0 w-[8.5rem]">
+                  <span id="misogiCountdownLabel" class="block text-sm font-medium text-ink-700 mb-1">Countdown</span>
+                  <div id="misogiCountdownBig" class="w-full px-3 py-2 rounded-lg border border-ink-200 bg-ink-50/50 text-ink-900 text-sm min-h-[2.25rem] flex items-center">— Days</div>
+                </div>
+              </div>
+              <div class="mb-4">
+                <label for="auditMisogiDescription" class="block text-sm font-medium text-ink-700 mb-1">Why does it matter?</label>
+                <input type="text" id="auditMisogiDescription" placeholder="e.g. To prove I can push past my limits" class="w-full px-3 py-2 rounded-lg border border-ink-200 text-ink-900 placeholder-ink-400 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 text-sm" />
+              </div>
+              <div class="mb-4">
+                <label for="auditMisogiWhatSetsApart" class="block text-sm font-medium text-ink-700 mb-1">What sets this apart?</label>
+                <input type="text" id="auditMisogiWhatSetsApart" placeholder="e.g. Something I've never attempted before" class="w-full px-3 py-2 rounded-lg border border-ink-200 text-ink-900 placeholder-ink-400 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 text-sm" />
+              </div>
+              <div class="mt-4">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <span class="text-sm font-medium text-ink-700">Inspiration</span>
+                  <input type="file" id="misogiImagesInput" accept="image/*" multiple class="sr-only" aria-label="Upload up to 3 images" />
+                  <button type="button" id="misogiImagesAddBtn" class="shrink-0 w-6 h-6 rounded border border-ink-200 text-ink-600 text-sm font-medium leading-none flex items-center justify-center hover:bg-ink-50 transition-colors" aria-label="Add image">+</button>
+                </div>
+                <div id="misogiImagesPreview" class="grid gap-2 max-h-56 overflow-hidden rounded-lg border border-ink-200 bg-ink-50/30 min-h-[4rem]"></div>
+              </div>
+            </section>
+            <!-- 2. Wayposts - Command Log -->
+            <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-5">
+              <h2 class="text-base font-bold text-ink-800 tracking-tight mb-3"><span class="audit-title-tooltip" data-tooltip="Wayposts are the rhythm of your year. If the Misogi is the mountain peak, the Wayposts are the markers that keep you on the trail.">Wayposts</span></h2>
+              <div id="waypostCommandLog" class="space-y-3">
+                <div id="waypostCommandLogSummary" class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-sm">
+                  <div class="rounded-lg border border-ink-200 bg-ink-50/50 px-2.5 py-1.5">
+                    <span class="text-ink-500 block text-xs font-medium">Completion</span>
+                    <span id="waypostCompletion" class="font-semibold text-ink-800">0/0</span> hit
+                  </div>
+                  <div class="rounded-lg border border-ink-200 bg-ink-50/50 px-2.5 py-1.5">
+                    <span class="text-ink-500 block text-xs font-medium">Target max stretch</span>
+                    <span id="waypostTargetMaxStretch" class="font-semibold text-ink-800">—</span> days
+                  </div>
+                  <div class="rounded-lg border border-ink-200 bg-ink-50/50 px-2.5 py-1.5">
+                    <span class="text-ink-500 block text-xs font-medium">Longest stretch</span>
+                    <span id="waypostLongestStretch" class="font-semibold text-ink-800">—</span>
+                  </div>
+                  <div class="rounded-lg border border-ink-200 bg-ink-50/50 px-2.5 py-1.5">
+                    <span class="text-ink-500 block text-xs font-medium">Average stretch</span>
+                    <span id="waypostAverageStretch" class="font-semibold text-ink-800">—</span>
+                  </div>
+                  <div class="rounded-lg border border-ink-200 bg-ink-50/50 px-2.5 py-1.5">
+                    <span class="text-ink-500 block text-xs font-medium">Average net</span>
+                    <span id="waypostNet" class="font-semibold text-ink-800">—</span>
+                  </div>
+                </div>
+                <div id="waypostLongestStretchWindow" class="hidden rounded-lg border border-ink-200 bg-amber-50/80 px-2.5 py-2 text-sm">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <span class="text-ink-600 font-medium">Longest stretch occurs:</span>
+                      <span id="waypostLongestStretchWindowDates" class="text-ink-800 ml-1">—</span>
+                      <p class="text-xs text-ink-500 mt-0.5">Schedule a waypost in this window to shorten the gap.</p>
+                    </div>
+                    <button type="button" id="waypostLongestStretchHide" class="shrink-0 text-xs text-ink-500 hover:text-ink-700 hover:underline" aria-label="Hide this section">Hide</button>
+                  </div>
+                </div>
+                <div id="waypostLongestStretchShow" class="hidden mt-2">
+                  <button type="button" id="waypostLongestStretchShowBtn" class="text-xs text-ink-500 hover:text-ink-700 hover:underline">Show longest stretch date range</button>
+                </div>
+                <ul id="waypostCommandLogList" class="space-y-1 border border-ink-200 rounded-lg divide-y divide-ink-100 mt-2"></ul>
+                <div id="waypostCancelledSection" class="mt-2 hidden">
+                  <button type="button" id="waypostCancelledToggle" class="w-full flex items-center justify-center gap-1 py-1.5 text-xs text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded transition-colors" aria-expanded="false" aria-controls="waypostCancelledExpandable">
+                    <span id="waypostCancelledToggleLabel">Cancelled</span>
+                    <span id="waypostCancelledToggleArrow" class="inline-block transition-transform">▼</span>
+                  </button>
+                  <div id="waypostCancelledExpandable" class="hidden pt-2 mt-2 border-t border-ink-100" role="region" aria-label="Cancelled wayposts">
+                    <ul id="waypostCancelledList" class="space-y-1 border border-ink-200 rounded-lg divide-y divide-ink-100"></ul>
+                  </div>
+                </div>
+                <div id="waypostMonthStrip" class="mt-3 w-full" aria-label="Waypost distribution by month"></div>
+              </div>
+            </section>
+            <!-- 3. Time Ownership -->
+            <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-5 overflow-hidden lg:col-span-2 min-w-0">
+                <div class="flex flex-nowrap items-center justify-between gap-4 mb-3">
+                  <h2 class="text-base font-bold text-ink-800 tracking-tight shrink-0"><span class="audit-title-tooltip" data-tooltip="Planned vs empty days by month (whitespace, defence, offence).">Time Ownership</span></h2>
+                  <div class="flex items-center gap-x-4 shrink-0 justify-end">
+                    <label class="flex items-center gap-2 cursor-pointer" for="offenceDefenceWeekendsOnly">
+                      <input type="checkbox" id="offenceDefenceWeekendsOnly" class="rounded border-ink-300 text-accent-600 focus:ring-accent-500" />
+                      <span class="text-sm font-medium text-ink-700">Weekends only</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer" for="offenceDefenceShowPct">
+                      <input type="checkbox" id="offenceDefenceShowPct" class="rounded border-ink-300 text-accent-600 focus:ring-accent-500" />
+                      <span class="text-sm font-medium text-ink-700">%</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="flex flex-nowrap items-stretch gap-4 w-full min-w-0">
+                  <div class="flex flex-col gap-y-1.5 shrink-0 text-xs text-ink-600">
+                    <p class="text-xs font-semibold text-ink-700 mb-0.5">Legend</p>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-ink-100 border border-ink-200" aria-hidden="true"></span> Whitespace (No Plans)</span>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-green-400 border border-ink-200" aria-hidden="true"></span> Defence (Planned by others)</span>
+                    <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded-sm bg-blue-500 border border-ink-200" aria-hidden="true"></span> Offence (Planned by you)</span>
+                  </div>
+                  <div id="offenceDefenceMonthStrip" class="flex flex-wrap items-end gap-x-1 gap-y-3 flex-1 min-w-0 overflow-x-auto" aria-label="Time ownership by month"></div>
+                </div>
+              </section>
+          </div>
+        </div>
+
+        <!-- Life (Reflect) -->
+        <div id="lifeContent" class="view-block view-block-life absolute left-0 top-0 w-full transition-transform duration-500 ease-out translate-x-full">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- Column 1: Facts + Horizon stacked vertically (page scroll) -->
+            <div class="grid grid-rows-auto gap-4 min-w-0">
+              <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-5 min-w-0" aria-labelledby="life-facts-heading">
+                <h2 id="life-facts-heading" class="text-base font-bold text-ink-800 tracking-tight mb-3">Facts</h2>
+                <p class="text-xs text-ink-500 mb-3">These inputs populate the rest of the Reflect tab.</p>
+                <button type="button" id="lifeFactsToggle" class="flex items-center gap-2 w-full text-left text-sm font-medium text-ink-600 hover:text-ink-800 py-1.5 rounded mb-2" aria-expanded="true" aria-controls="lifeFactsContent">
+                  <span id="lifeFactsToggleLabel">Hide inputs</span>
+                  <svg id="lifeFactsChevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div id="lifeFactsContent" class="overflow-hidden" role="region" aria-labelledby="lifeFactsToggleLabel">
+                <div class="flex flex-wrap items-end gap-3 mb-4">
+                  <div class="min-w-0 flex-1" style="min-width: 7rem;">
+                    <label for="lifeDateOfBirth" class="block text-xs font-medium text-ink-700 mb-0.5">Date of birth</label>
+                    <input type="date" id="lifeDateOfBirth" class="w-full px-2 py-1.5 rounded border border-ink-200 text-ink-900 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500" aria-label="Date of birth" />
+                  </div>
+                  <div class="min-w-0" style="width: 5.5rem;">
+                    <label for="lifeGender" class="block text-xs font-medium text-ink-700 mb-0.5">Gender</label>
+                    <select id="lifeGender" class="w-full px-2 py-1.5 rounded border border-ink-200 text-ink-900 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 bg-white" aria-label="Gender">
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                  </div>
+                  <div class="min-w-0 flex items-end gap-1.5">
+                    <div style="width: 3.5rem;">
+                      <label for="lifeExpectancyInput" class="block text-xs font-medium text-ink-700 mb-0.5">Expectancy</label>
+                      <input type="number" id="lifeExpectancyInput" class="w-full px-2 py-1.5 rounded border border-ink-200 text-ink-900 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 disabled:bg-ink-50 disabled:text-ink-500" min="1" max="120" step="1" placeholder="76" aria-label="Life expectancy (years)" />
+                    </div>
+                    <label class="flex items-center gap-1 text-xs text-ink-500 cursor-pointer pb-1.5" title="Override with custom value">
+                      <input type="checkbox" id="lifeExpectancyOverrideCheck" class="rounded border-ink-300 text-ink-700 focus:ring-accent-500" aria-label="Override with custom value" />
+                      <span>Override</span>
+                    </label>
+                    </div>
+                </div>
+                <div class="border-t border-ink-100 pt-3">
+                  <label class="flex items-center gap-2 cursor-pointer mb-2">
+                    <input type="checkbox" id="lifeHasChildrenCheck" class="rounded border-ink-300 text-ink-700 focus:ring-accent-500" aria-label="I have living children" />
+                    <span class="text-xs font-medium text-ink-700">I have living children</span>
+                  </label>
+                  <div id="lifeChildrenBlock" class="hidden">
+                    <p class="text-xs font-medium text-ink-700 mb-2">Children</p>
+                    <div id="lifeChildrenList" class="space-y-2 mb-2"></div>
+                    <button type="button" id="lifeAddChildBtn" class="text-xs text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded px-2 py-1">+ Add child</button>
+                  </div>
+                </div>
+                <div class="border-t border-ink-100 pt-3">
+                  <label class="flex items-center gap-2 cursor-pointer mb-2">
+                    <input type="checkbox" id="lifeHasLivingParentsCheck" class="rounded border-ink-300 text-ink-700 focus:ring-accent-500" aria-label="I have living parents" />
+                    <span class="text-xs font-medium text-ink-700">I have living parents</span>
+                  </label>
+                  <div id="lifeParentsBlock" class="hidden">
+                    <p class="text-xs font-medium text-ink-700 mb-2">Parents</p>
+                    <div id="lifeParentsList" class="space-y-2 mb-2"></div>
+                    <button type="button" id="lifeAddParentBtn" class="text-xs text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded px-2 py-1">+ Add parent</button>
+                  </div>
+                </div>
+                </div>
+              </section>
+              <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-5 min-w-0 flex flex-col" aria-labelledby="life-horizon-heading">
+                <h2 id="life-horizon-heading" class="text-base font-bold text-ink-800 tracking-tight mb-3 shrink-0">Horizon</h2>
+                <div id="lifeClock" class="text-sm text-ink-600 mb-2 shrink-0">— Months Lived | — Months Remaining</div>
+                <p id="lifeScarcityNote" class="text-sm text-ink-600 mb-4 shrink-0">Enter your date of birth in Facts to see your horizon.</p>
+                <div id="lifeGridWrapper" class="border border-ink-200 rounded-lg bg-ink-50/50 p-3 w-full min-h-0" aria-label="Life in months: each cell is one month, each row is three years"></div>
+                <div id="lifeHorizonProgress" class="mt-2 shrink-0">
+                  <div class="flex justify-between text-xs text-ink-600 mb-1">
+                    <span>Life progress</span>
+                    <span id="lifeHorizonProgressPct" aria-live="polite">—%</span>
+                  </div>
+                  <div class="h-2 rounded-full bg-ink-200 overflow-hidden" role="presentation">
+                    <div id="lifeHorizonProgressBar" class="h-full rounded-full bg-accent-500 transition-all duration-300" style="width: 0%"></div>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <!-- Column 2. Seasons -->
+            <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-5 min-w-0">
+              <h2 class="text-base font-bold text-ink-800 tracking-tight mb-3">Seasons</h2>
+              <div id="seasonsContainer" class="flex flex-col gap-4">
+                <div id="seasonsActiveSection" class="hidden">
+                  <div id="seasonsActiveVitality" class="seasons-active-category flex flex-col gap-4 mb-3">
+                    <h4 class="text-xs font-semibold text-ink-500 uppercase tracking-wide mb-1">Vitality</h4>
+                    <div id="seasonsActiveVitalityBlock" class="flex flex-col gap-4"></div>
+                  </div>
+                  <div id="seasonsActiveConnection" class="seasons-active-category flex flex-col gap-4 mb-3">
+                    <h4 class="text-xs font-semibold text-ink-500 uppercase tracking-wide mb-1">Connection</h4>
+                    <div id="seasonsActiveConnectionBlock" class="flex flex-col gap-4"></div>
+                  </div>
+                  <div id="seasonsActiveGrowth" class="seasons-active-category flex flex-col gap-4 mb-3">
+                    <h4 class="text-xs font-semibold text-ink-500 uppercase tracking-wide mb-1">Growth</h4>
+                    <div id="seasonsActiveGrowthBlock" class="flex flex-col gap-4"></div>
+                  </div>
+                </div>
+                <div id="seasonsInactiveSection" class="hidden">
+                  <button type="button" id="seasonsInactiveToggle" class="flex items-center gap-2 w-full text-left text-xs font-semibold text-ink-500 uppercase tracking-wide py-1.5 rounded" aria-expanded="false" aria-controls="seasonsInactiveContent">
+                    <span id="seasonsInactiveLabel">Inactive</span>
+                    <svg id="seasonsInactiveChevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                  <div id="seasonsInactiveContent" class="flex flex-col gap-4 mt-2 overflow-hidden hidden" role="region" aria-labelledby="seasonsInactiveLabel"></div>
+                </div>
+                <div id="seasonsCardPeak" class="seasons-card rounded-lg border border-ink-100 p-3" data-season-index="0">
+                  <h3 class="text-sm font-semibold text-ink-800 mb-1">Peak Output Years</h3>
+                  <p class="text-xs text-ink-500 mb-1">Work/Physical · Ages 25–55</p>
+                  <div class="flex items-start justify-between gap-2">
+                    <p id="seasonsPeakOutput" class="text-sm text-ink-700 min-w-0 flex-1"></p>
+                    <span id="seasonsPeakValue" class="text-sm font-bold text-ink-800 shrink-0">—</span>
+                  </div>
+                </div>
+                <div id="seasonsCardSuperhero" class="seasons-card rounded-lg border border-ink-100 p-3" data-season-index="1">
+                  <h3 class="text-sm font-semibold text-ink-800 mb-1">The Superhero Phase</h3>
+                  <p class="text-xs text-ink-500 mb-1">With young kids · Ages 0–12</p>
+                  <div class="flex items-start justify-between gap-2">
+                    <p id="seasonsSuperhero" class="text-sm text-ink-700 min-w-0 flex-1"></p>
+                    <span id="seasonsSuperheroValue" class="text-sm font-bold text-ink-800 shrink-0">—</span>
+                  </div>
+                </div>
+                <div id="seasonsCardExplorer" class="seasons-card rounded-lg border border-ink-100 p-3" data-season-index="2">
+                  <h3 class="text-sm font-semibold text-ink-800 mb-1">The Explorer Window</h3>
+                  <p class="text-xs text-ink-500 mb-1">Travel/Mobility · to Age 70</p>
+                  <div class="flex items-start justify-between gap-2">
+                    <p id="seasonsExplorer" class="text-sm text-ink-700 min-w-0 flex-1"></p>
+                    <span id="seasonsExplorerValue" class="text-sm font-bold text-ink-800 shrink-0">—</span>
+                  </div>
+                </div>
+                <div id="seasonsCardWisdom" class="seasons-card rounded-lg border border-ink-100 p-3" data-season-index="3">
+                  <h3 class="text-sm font-semibold text-ink-800 mb-1">The Wisdom Transition</h3>
+                  <p class="text-xs text-ink-500 mb-1">Mentorship & Legacy · 60+</p>
+                  <div class="flex items-start justify-between gap-2">
+                    <p id="seasonsWisdom" class="text-sm text-ink-700 min-w-0 flex-1"></p>
+                    <span id="seasonsWisdomValue" class="text-sm font-bold text-ink-800 shrink-0">—</span>
+                  </div>
+                </div>
+                <div id="seasonsCardMultiGen" class="seasons-card rounded-lg border border-ink-100 p-3" data-season-index="4">
+                  <h3 class="text-sm font-semibold text-ink-800 mb-1">The Multi-Gen Window</h3>
+                  <p class="text-xs text-ink-500 mb-1">Shared mobility with parents · to Age 80</p>
+                  <div class="flex items-start justify-between gap-2">
+                    <p id="seasonsMultiGen" class="text-sm text-ink-700 min-w-0 flex-1"></p>
+                    <span id="seasonsMultiGenValue" class="text-sm font-bold text-ink-800 shrink-0">—</span>
+                  </div>
+                </div>
+                <div id="seasonsCardHighImpact" class="seasons-card rounded-lg border border-ink-100 p-3" data-season-index="5">
+                  <h3 class="text-sm font-semibold text-ink-800 mb-1">The High-Impact Era</h3>
+                  <p class="text-xs text-ink-500 mb-1">Peak joint integrity · to Age 50</p>
+                  <div class="flex items-start justify-between gap-2">
+                    <p id="seasonsHighImpact" class="text-sm text-ink-700 min-w-0 flex-1"></p>
+                    <span id="seasonsHighImpactValue" class="text-sm font-bold text-ink-800 shrink-0">—</span>
+                  </div>
+                </div>
+                <div id="seasonsCardNeuroPlastic" class="seasons-card rounded-lg border border-ink-100 p-3" data-season-index="6">
+                  <h3 class="text-sm font-semibold text-ink-800 mb-1">The Neuro-Plastic Window</h3>
+                  <p class="text-xs text-ink-500 mb-1">Peak new-skill acquisition · to Age 45</p>
+                  <div class="flex items-start justify-between gap-2">
+                    <p id="seasonsNeuroPlastic" class="text-sm text-ink-700 min-w-0 flex-1"></p>
+                    <span id="seasonsNeuroPlasticValue" class="text-sm font-bold text-ink-800 shrink-0">—</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <!-- Column 3. Milestones -->
+            <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-5 min-w-0">
+              <h2 class="text-base font-bold text-ink-800 tracking-tight mb-3">Milestones</h2>
+              <p class="text-sm text-ink-600 mb-3">Life milestones and waypoints.</p>
+              <ul id="lifeMilestonesList" class="space-y-2 mb-3 list-disc pl-5 text-sm text-ink-700"></ul>
+              <button type="button" id="lifeAddMilestoneBtn" class="text-xs text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded px-2 py-1">+ Add milestone</button>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Date context popover: events for selected date -->
+  <div id="dateContextPopover" class="fixed z-40 hidden no-print" role="dialog" aria-label="Events for date">
+    <div class="bg-white rounded-xl border border-ink-200 shadow-lg py-3 min-w-[200px] max-w-[280px]">
+      <div class="px-4 pb-2 border-b border-ink-100">
+        <p id="dateContextTitle" class="text-sm font-semibold text-ink-800"></p>
+      </div>
+      <ul id="dateContextEvents" class="px-4 py-2 max-h-48 overflow-y-auto space-y-1.5 text-sm text-ink-700"></ul>
+      <div class="px-4 pt-2 border-t border-ink-100 space-y-2">
+        <button type="button" id="dateContextAddBtn" class="w-full py-2 rounded-lg bg-ink-100 text-ink-700 text-sm font-medium hover:bg-ink-200 transition-colors">Add event</button>
+        <button type="button" id="dateContextMultiSelectBtn" class="w-full py-2 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-ink-50 transition-colors">Select multiple dates</button>
+      </div>
+    </div>
+  </div>
+  <div id="dateContextBackdrop" class="fixed inset-0 z-30 hidden no-print" aria-hidden="true"></div>
+
+  <!-- Waypost delete confirmation -->
+  <div id="waypostDeleteConfirmModal" class="fixed inset-0 z-50 hidden no-print" aria-hidden="true" role="dialog" aria-labelledby="waypostDeleteConfirmTitle" aria-modal="true">
+    <div class="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" id="waypostDeleteConfirmBackdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-xl border border-ink-200 p-6">
+        <h3 id="waypostDeleteConfirmTitle" class="text-lg font-semibold text-ink-900 mb-2">Delete waypost?</h3>
+        <p class="text-sm text-ink-600 mb-4">This waypost will be removed from the calendar. This cannot be undone.</p>
+        <div class="flex gap-2">
+          <button type="button" id="waypostDeleteConfirmBtn" class="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors">Delete</button>
+          <button type="button" id="waypostDeleteConfirmCancelBtn" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100 transition-colors">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clear events modal: choose which events to remove from selected dates -->
+  <div id="clearEventsModal" class="fixed inset-0 z-50 hidden no-print" aria-hidden="true">
+    <div class="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" id="clearEventsBackdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-xl border border-ink-200 p-6">
+        <h3 class="text-lg font-semibold text-ink-900 mb-1">Clear events from selected dates</h3>
+        <p id="clearEventsSubtitle" class="text-sm text-ink-500 mb-4"></p>
+        <p class="text-sm text-ink-600 mb-3">Choose which events to remove from all <span id="clearEventsDateCount">0</span> selected dates:</p>
+        <ul id="clearEventsChecklist" class="space-y-2 max-h-48 overflow-y-auto mb-4">
+          <!-- Filled by JS -->
+        </ul>
+        <div id="clearEventsEmpty" class="hidden text-sm text-ink-400 italic mb-4">No events on selected dates.</div>
+        <div class="flex gap-2">
+          <button type="button" id="clearEventsRemoveBtn" class="flex-1 px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700">Remove selected</button>
+          <button type="button" id="clearEventsCancelBtn" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings modal -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden no-print" aria-hidden="true">
+    <div class="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" id="settingsBackdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-xl border border-ink-200 p-6">
+        <div id="settingsMenu" class="settings-panel">
+          <h3 class="text-lg font-semibold text-ink-900 mb-4">Settings</h3>
+          <ul class="space-y-1" role="menu">
+            <li><button type="button" id="settingsOptionReset" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-ink-700 hover:bg-ink-100 transition-colors" role="menuitem">Reset to defaults</button></li>
+          </ul>
+          <button type="button" id="settingsModalClose" class="mt-4 px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Done</button>
+        </div>
+        <div id="settingsResetPanel" class="settings-panel hidden">
+          <button type="button" id="settingsResetBack" class="mb-3 text-sm text-ink-500 hover:text-ink-700 flex items-center gap-1">← Back</button>
+          <h3 class="text-lg font-semibold text-ink-900 mb-4">Reset to defaults</h3>
+          <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">This will reset the calendar back to its default state. All events, categories, and preferences will be lost.</p>
+          <div class="flex gap-3">
+            <button type="button" id="settingsResetBtn" class="px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors">Reset</button>
+            <button type="button" id="settingsResetCancel" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage categories modal -->
+  <div id="categoriesModal" class="fixed inset-0 z-50 hidden no-print" aria-hidden="true">
+    <div class="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" id="categoriesBackdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-ink-200 p-6 max-h-[90vh] flex flex-col">
+        <h3 class="text-lg font-semibold text-ink-900 mb-2">Categories</h3>
+        <p class="text-sm text-ink-500 mb-4">Define categories and colors for your events. Events using a deleted category will be moved to the first category.</p>
+        <ul id="categoriesList" class="space-y-2 overflow-y-auto flex-1 min-h-0 mb-4">
+          <!-- Filled by JS -->
+        </ul>
+        <div class="flex gap-2 flex-shrink-0">
+          <input type="text" id="newCategoryName" placeholder="Category name" class="flex-1 px-3 py-2 rounded-lg border border-ink-200 text-sm" />
+          <input type="color" id="newCategoryColor" value="#2563eb" class="w-10 h-10 rounded cursor-pointer border border-ink-200" title="Color" />
+          <button type="button" id="addCategoryBtn" class="px-4 py-2 rounded-lg bg-ink-800 text-white text-sm font-medium hover:bg-ink-700">Add</button>
+        </div>
+        <button type="button" id="categoriesModalClose" class="mt-4 py-2 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event modal -->
+  <div id="eventModal" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+    <div class="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" id="modalBackdrop"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+      <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-ink-200 p-6">
+        <h3 class="text-lg font-semibold text-ink-900 mb-4" id="modalTitle">Add event</h3>
+        <form id="eventForm" class="space-y-4">
+          <input type="hidden" id="eventDateKey" />
+          <input type="hidden" id="eventIndex" value="" />
+          <input type="hidden" id="eventId" value="" />
+          <div>
+            <label for="eventTitle" class="block text-sm font-medium text-ink-700 mb-1">Title</label>
+            <input type="text" id="eventTitle" placeholder="Event name" class="w-full px-3 py-2 rounded-lg border border-ink-200 text-ink-900 placeholder-ink-400 focus:ring-2 focus:ring-accent-500 focus:border-accent-500" required />
+          </div>
+          <div id="eventModalRangesSection">
+            <label class="block text-sm font-medium text-ink-700 mb-2">When</label>
+            <div id="eventModalRangesContainer" class="space-y-2">
+              <div class="event-range-row flex flex-wrap items-center gap-2">
+                <input type="date" class="event-range-start flex-1 min-w-0 px-3 py-2 rounded-lg border border-ink-200 text-ink-900 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500" aria-label="Start date" />
+                <span class="text-ink-400 text-sm">–</span>
+                <input type="date" class="event-range-end flex-1 min-w-0 px-3 py-2 rounded-lg border border-ink-200 text-ink-900 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500" aria-label="End date" />
+                <button type="button" class="event-range-remove hidden px-2 py-1.5 text-xs text-ink-500 hover:text-red-600 hover:bg-red-50 rounded border border-transparent hover:border-red-200" title="Remove range">Remove</button>
+              </div>
+            </div>
+            <button type="button" id="eventModalAddRange" class="mt-2 text-sm text-ink-500 hover:text-ink-700 hover:bg-ink-50 px-2 py-1.5 rounded-lg transition-colors">+ Add another range</button>
+          </div>
+          <div class="pt-2 border-t border-ink-200">
+            <label class="block text-sm font-medium text-ink-700 mb-2">Category</label>
+            <div class="flex flex-col gap-2" id="categoryOptions">
+              <!-- Filled by JS -->
+            </div>
+            <div class="mt-4 pt-4 border-t border-ink-200">
+              <button type="button" id="toggleNewCategoryBtn" class="text-sm font-medium text-ink-600 hover:text-ink-800 hover:bg-ink-100 px-2 py-1.5 rounded-lg transition-colors" aria-expanded="false" aria-controls="newCategoryInModalSection">
+                + Add new category
+              </button>
+              <div id="newCategoryInModalSection" class="hidden mt-3 p-3 rounded-lg bg-ink-50 border border-ink-200" aria-hidden="true">
+                <p class="text-xs text-ink-500 mb-2">Name and color for the new category</p>
+                <div class="flex gap-2 items-center">
+                  <input type="text" id="newCategoryInModalName" placeholder="Category name" class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-ink-200 text-sm bg-white" />
+                  <input type="color" id="newCategoryInModalColor" value="#2563eb" class="w-9 h-9 rounded cursor-pointer border border-ink-200 flex-shrink-0" title="Color" />
+                  <button type="button" id="addCategoryInModalBtn" class="px-3 py-2 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-ink-100 whitespace-nowrap">Add</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-ink-200">
+            <label class="block text-sm font-medium text-ink-700 mb-2">Planned by <span class="text-ink-500 font-normal">(required)</span></label>
+            <div class="flex flex-col gap-2">
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="eventType" value="offensive" class="rounded-full border-ink-300 text-ink-700 focus:ring-accent-500" />
+                <span class="text-sm text-ink-700">Offensive (planned by you)</span>
+              </label>
+              <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="eventType" value="defensive" class="rounded-full border-ink-300 text-ink-700 focus:ring-accent-500" />
+                <span class="text-sm text-ink-700">Defensive (planned by others)</span>
+              </label>
+            </div>
+            <p id="eventModalPlannedByError" class="hidden mt-1.5 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2" role="alert" aria-live="polite"></p>
+          </div>
+          <div class="flex gap-2 pt-2">
+            <button type="submit" class="flex-1 px-4 py-2.5 rounded-lg bg-ink-800 text-white text-sm font-medium hover:bg-ink-700">Save</button>
+            <button type="button" id="modalDelete" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100 hidden">Delete</button>
+            <button type="button" id="modalCancel" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="planner.js"></script>
+  <script src="audit.js"></script>
+  <script src="perspective.js"></script>
+</body>
+</html>

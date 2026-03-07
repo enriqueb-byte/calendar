@@ -1,0 +1,44 @@
+/**
+ * Calendar Planner 2.0 — Layout and single-page scroll
+ * One document scroll; no fixed-height viewport or inner overflow.
+ */
+
+/* Reserve scrollbar space so layout doesn't shift when scrollbar appears */
+html {
+  scrollbar-gutter: stable;
+}
+
+
+/* Main content area: no fixed height, no overflow; grows with active view */
+#app-main {
+  margin: 0;
+  overflow: visible;
+  min-height: 0;
+}
+
+/* View sections: only the non-hidden one is visible */
+#view-plan,
+#view-audit,
+#view-reflect {
+  display: block;
+}
+
+/* Plan view: left sidebar scrolls with page (no sticky) */
+#legendSidebar {
+  position: static !important;
+  top: auto !important;
+  bottom: auto !important;
+}
+#legendSidebar > div {
+  position: static !important;
+  top: auto !important;
+  bottom: auto !important;
+}
+#legendSidebar [class*="sticky"] {
+  position: relative !important;
+  top: auto !important;
+}
+
+section[hidden] {
+  display: none !important;
+}

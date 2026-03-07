@@ -1,0 +1,302 @@
+/**
+ * Calendar Planner 2.0 — Day cells, calendar, modals, shared UI
+ */
+
+/* Day cell */
+.day-cell {
+  min-height: 2.5rem;
+  border: 1px solid #d9d9de;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+  color: #4d4d56;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  container-type: size;
+  container-name: day-cell;
+  overflow: hidden;
+  min-width: 0;
+}
+.day-cell:hover { background-color: #eeeef0; border-color: #b8b8c0; }
+@media (min-width: 640px) {
+  .day-cell { min-height: 3rem; padding: 0.375rem; }
+}
+.months-grid.grid-cols-1 .day-cell {
+  aspect-ratio: 1.2;
+}
+.day-cell.empty {
+  background-color: #f7f7f8;
+  cursor: default;
+}
+.day-cell.empty:hover { background-color: #f7f7f8; border-color: #d9d9de; }
+.day-cell.selected { background-color: #e0effe; border-color: #2563eb; }
+.day-cell.today { border-width: 2px; border-color: #1a1a1a; }
+.day-cell.today .day-cell-date-row > span:first-child { font-weight: 700; }
+
+/* Day cell hover tooltip: floating popup (rendered in JS, appended to body so not clipped) */
+#dayCellTooltipPopup {
+  position: fixed;
+  z-index: 9999;
+  padding: 0.5rem 0.75rem;
+  max-width: 20rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #424249;
+  background: #fff;
+  border: 1px solid #d9d9de;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  white-space: normal;
+  pointer-events: none;
+  display: none;
+}
+#dayCellTooltipPopup.visible { display: block; }
+
+/* Event dots and chips */
+.event-dot {
+  width: 0.375rem; height: 0.375rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+.event-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-left: 3px solid transparent;
+  color: #3a3a40;
+}
+.event-chip-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 640px) {
+  .event-dot { width: 0.5rem; height: 0.5rem; }
+  .event-chip { font-size: 0.75rem; padding: 0.2rem 0.4rem; }
+}
+.event-chips-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+}
+.event-dots-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  gap: 0.125rem 0.25rem;
+}
+.event-dots-row { width: 100%; min-width: 0; }
+.event-dot-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+/* Daily Life (Track) event bubbles — background set in JS from category color */
+.general-event-bubble:hover {
+  filter: brightness(0.96);
+}
+
+.event-tag-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.625rem;
+  height: 0.625rem;
+  flex-shrink: 0;
+  line-height: 0;
+}
+.event-tag-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.event-tag-icon-waypost { color: #4d4d56; }
+.event-tag-icon-misogi { color: #4d4d56; }
+.day-cell-inner { min-width: 0; width: 100%; }
+.day-cell-date-row { width: 100%; min-width: 0; }
+.event-more-badge {
+  color: #424249;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  visibility: visible;
+}
+.day-cell.has-chip-fallback .event-dots-wrapper { display: none; }
+.day-cell.has-chip-fallback .event-chips-wrapper { display: flex; }
+.day-cell.has-single-event-dot:not(.selected):not(.today) {
+  background-color: var(--single-event-pastel);
+  border-left: 3px solid var(--single-event-primary);
+}
+/* 5–6 per row: compact cells; chips show truncated text, cell only as tall as needed */
+.months-grid.grid-cols-6 .day-cell {
+  min-height: 1.75rem;
+  padding: 0.15rem 0.2rem;
+}
+.months-grid.grid-cols-6 .day-cell .day-cell-date-row { flex-shrink: 0; }
+.months-grid.grid-cols-6 .day-cell .day-num { font-size: 0.65rem; line-height: 1.2; }
+@media (min-width: 640px) {
+  .months-grid.grid-cols-6 .day-cell { min-height: 2rem; padding: 0.2rem 0.25rem; }
+  .months-grid.grid-cols-6 .day-cell .day-num { font-size: 0.7rem; }
+}
+/* Slightly smaller chips in very narrow cells so one-line preview fits */
+@container day-cell (max-inline-size: 4rem) {
+  .day-cell .event-chip { font-size: 0.625rem; padding: 0.1rem 0.25rem; line-height: 1.15; }
+}
+
+/* Multi-select / add event bar */
+.print-legend-only-container { display: none; }
+#addEventToSelectedBtn.add-event-btn-empty { background-color: #e0effe; color: #1d4ed8; }
+#addEventToSelectedBtn.add-event-btn-empty:hover { background-color: #c7e0fe; }
+#addEventToSelectedBtn.add-event-btn-active { background-color: #2563eb; color: #fff; }
+#addEventToSelectedBtn.add-event-btn-active:hover { background-color: #1d4ed8; }
+
+/* View toggle and title */
+.view-toggle-group { display: inline-flex; border: 1px solid #d9d9de; border-radius: 0.5rem; overflow: hidden; }
+.view-toggle-btn { border: none; border-radius: 0; border-right: 1px solid #d9d9de; }
+.view-toggle-btn:last-child { border-right: none; }
+.view-toggle-btn[aria-pressed="true"] { background: #e8e8ec; color: #1a1a1a; font-weight: 600; }
+.app-title-editable:empty::before { content: attr(data-placeholder); color: #91919d; }
+
+/* Audit section title hover tooltips */
+.audit-title-tooltip { position: relative; }
+.audit-title-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  max-width: 20rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #424249;
+  background: #fff;
+  border: 1px solid #d9d9de;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s, visibility 0.15s;
+  z-index: 30;
+  pointer-events: none;
+}
+.audit-title-tooltip:hover::after { opacity: 1; visibility: visible; }
+
+/* Reflect view: Horizons (life grid), Seasons, Facts toggle */
+#lifeGridWrapper { width: 100%; }
+.life-months-grid { display: grid; grid-template-columns: repeat(36, 1fr); gap: 2px; width: 100%; min-width: 0; min-height: 0; }
+.life-month-cell { border-radius: 2px; box-sizing: border-box; background: #fff; border: 1px solid #e5e5e7; min-width: 0; min-height: 0; }
+.life-month-cell.lived { background: #E5E7EB; border-color: #E5E7EB; }
+.life-month-cell.current { background: #1A73E8; border-color: #1A73E8; box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3); animation: life-month-pulse 2s ease-in-out infinite; }
+@keyframes life-month-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.3); } 50% { box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.15); } }
+#seasonsContainer { display: flex; flex-direction: column; }
+.seasons-card.season-inactive { background: #f7f7f8; border-color: #eeeef0; }
+#seasonsInactiveToggle[aria-expanded="true"] #seasonsInactiveChevron { transform: rotate(180deg); }
+#lifeFactsToggle[aria-expanded="false"] #lifeFactsChevron { transform: rotate(-90deg); }
+
+/* Plan view content padding */
+#view-plan > div { padding-bottom: 2rem; padding-right: 2rem; }
+
+/* Print */
+@media print {
+  @page { size: 17in 11in; margin: 0.6in; }
+  :root { --print-h: 9.8in; --print-w: 15.8in; }
+  html {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    margin: 0 !important; padding: 0 !important;
+    width: var(--print-w) !important; height: auto !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+  body {
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    margin: 0 !important; padding: 0 !important;
+    width: var(--print-w) !important; max-width: none !important;
+    min-height: var(--print-h) !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+  body * { box-sizing: border-box !important; }
+  .no-print { display: none !important; }
+  #app-main { width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+  #view-plan { width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+  #view-plan > div { display: block !important; width: var(--print-w) !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  #view-plan .flex-1 { width: var(--print-w) !important; max-width: none !important; flex: none !important; }
+  .months-grid {
+    width: var(--print-w) !important; max-width: none !important;
+    padding: 0 !important; margin: 0 !important;
+    background: #fff !important; overflow: visible !important;
+  }
+  .month-card {
+    break-inside: avoid; page-break-inside: avoid;
+    overflow: hidden !important; box-sizing: border-box !important;
+    display: flex !important; flex-direction: column !important;
+    border-color: #e5e5e7 !important;
+  }
+  .month-card h2 { font-weight: 700 !important; letter-spacing: -0.02em !important; }
+  .month-card > div:first-child { flex-shrink: 0 !important; }
+  .month-card > div:last-child { flex: 1 !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; }
+  .month-card > div:last-child > div:first-child { flex-shrink: 0 !important; }
+  .month-card > div:last-child > div:nth-child(n+2) { flex: 1 !important; min-height: 0 !important; display: flex !important; flex-direction: column !important; }
+  .month-card .day-cell-inner { justify-content: flex-start !important; align-items: flex-start !important; }
+  .month-card .day-cell-inner > div:first-child { flex-shrink: 0 !important; }
+  .month-card .event-chips-wrapper { flex-shrink: 0 !important; overflow: hidden !important; }
+  .month-card .event-more-badge::after { content: " more"; }
+  .day-cell.today { box-shadow: none !important; background-color: #f7f7f8 !important; border-color: #d9d9de !important; }
+  [data-print-cols="1"] .months-grid {
+    grid-template-columns: 1fr !important; grid-auto-rows: var(--print-h) !important;
+    gap: 0 !important; height: auto !important;
+    width: var(--print-w) !important; max-width: none !important;
+  }
+  [data-print-cols="1"] .month-card {
+    width: 100% !important; max-width: var(--print-w) !important;
+    height: var(--print-h) !important; min-height: var(--print-h) !important; max-height: var(--print-h) !important;
+    page-break-after: always !important;
+    padding: 0.2in 0.3in !important; border-radius: 0.4rem !important;
+  }
+  [data-print-cols="1"] .month-card:last-child { page-break-after: auto !important; }
+  [data-print-cols="1"] .month-card .day-cell { aspect-ratio: 1.2 !important; min-height: 0 !important; overflow: hidden !important; }
+  [data-print-cols="2"] .months-grid, [data-print-cols="3"] .months-grid, [data-print-cols="4"] .months-grid, [data-print-cols="5"] .months-grid, [data-print-cols="6"] .months-grid { width: var(--print-w) !important; max-width: none !important; }
+  [data-print-cols="2"] .months-grid { grid-template-columns: repeat(2, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.15in !important; }
+  [data-print-cols="3"] .months-grid { grid-template-columns: repeat(3, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.12in !important; }
+  [data-print-cols="4"] .months-grid { grid-template-columns: repeat(4, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.1in !important; }
+  [data-print-cols="5"] .months-grid { grid-template-columns: repeat(5, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.08in !important; }
+  [data-print-cols="6"] .months-grid { grid-template-columns: repeat(6, 1fr) !important; grid-auto-rows: var(--print-h) !important; gap: 0.06in !important; }
+  [data-print-cols="2"] .month-card, [data-print-cols="3"] .month-card, [data-print-cols="4"] .month-card, [data-print-cols="5"] .month-card, [data-print-cols="6"] .month-card {
+    width: 100% !important; height: 100% !important; min-height: var(--print-h) !important;
+    padding: 0.15in 0.18in !important; border-radius: 0.3rem !important;
+  }
+  [data-print-cols="3"] .month-card { padding: 0.12in 0.14in !important; }
+  [data-print-cols="4"] .month-card { padding: 0.1in 0.12in !important; }
+  [data-print-cols="5"] .month-card { padding: 0.08in 0.1in !important; }
+  [data-print-cols="6"] .month-card { padding: 0.06in 0.08in !important; }
+  [data-print-cols="2"] .month-card:nth-child(2n), [data-print-cols="3"] .month-card:nth-child(3n), [data-print-cols="4"] .month-card:nth-child(4n), [data-print-cols="5"] .month-card:nth-child(5n), [data-print-cols="6"] .month-card:nth-child(6n) { page-break-after: always !important; }
+  [data-print-cols="2"] .month-card:last-child, [data-print-cols="3"] .month-card:last-child, [data-print-cols="4"] .month-card:last-child, [data-print-cols="5"] .month-card:last-child, [data-print-cols="6"] .month-card:last-child { page-break-after: auto !important; }
+  [data-print-cols="2"] .month-card .day-cell, [data-print-cols="3"] .month-card .day-cell, [data-print-cols="4"] .month-card .day-cell, [data-print-cols="5"] .month-card .day-cell, [data-print-cols="6"] .month-card .day-cell { aspect-ratio: 1.2 !important; min-height: 0 !important; overflow: hidden !important; }
+  [data-print-legend-only="true"] #app-main { display: none !important; }
+  [data-print-legend-only="true"] .print-legend-only-container { display: block !important; }
+}
