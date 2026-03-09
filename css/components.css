@@ -171,13 +171,42 @@
 #addEventToSelectedBtn.add-event-btn-empty:hover { background-color: #c7e0fe; }
 #addEventToSelectedBtn.add-event-btn-active { background-color: #2563eb; color: #fff; }
 #addEventToSelectedBtn.add-event-btn-active:hover { background-color: #1d4ed8; }
+@media (max-width: 639px) {
+  #addEventToSelectedBtn { min-height: 2.75rem; padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  #multiSelectBar button:not(#addEventToSelectedBtn) { min-height: 2.5rem; }
+}
+
+/* Sticky event bar: stays below header when scrolling */
+.sticky-event-bar {
+  position: sticky;
+  z-index: 30;
+  top: 5.5rem;
+  margin-bottom: 0.25rem;
+}
+@media (max-width: 639px) {
+  .sticky-event-bar { top: 7rem; }
+}
 
 /* View toggle and title */
-.view-toggle-group { display: inline-flex; border: 1px solid #d9d9de; border-radius: 0.5rem; overflow: hidden; }
-.view-toggle-btn { border: none; border-radius: 0; border-right: 1px solid #d9d9de; }
-.view-toggle-btn:last-child { border-right: none; }
+.view-toggle-group { display: flex; border: 1px solid #d9d9de; border-radius: 0.5rem; overflow: hidden; padding-left: 0.25rem; padding-right: 0.25rem; gap: 0; }
+@media (min-width: 640px) {
+  .view-toggle-group { padding-left: 0.5rem; padding-right: 0.5rem; }
+}
+.view-toggle-group-title { padding-right: 0.5rem; margin-right: 0; }
+.view-toggle-buffer { flex: 1; min-width: 0; }
+.view-toggle-btn { border: none; border-radius: 0; border-right: 1px solid #d9d9de; flex: 1; min-width: 0; }
+.view-toggle-btn:last-of-type { border-right: none; }
 .view-toggle-btn[aria-pressed="true"] { background: #e8e8ec; color: #1a1a1a; font-weight: 600; }
 .app-title-editable:empty::before { content: attr(data-placeholder); color: #91919d; }
+
+/* Responsive: header and plan view */
+@media (max-width: 639px) {
+  .header-inner { align-items: stretch; }
+  .view-toggle-group { flex: 1; min-width: 0; }
+}
+@media (min-width: 640px) {
+  .header-row-title { flex: 0 0 auto; }
+}
 
 /* Audit section title hover tooltips */
 .audit-title-tooltip { position: relative; }
@@ -219,7 +248,10 @@
 #lifeFactsToggle[aria-expanded="false"] #lifeFactsChevron { transform: rotate(-90deg); }
 
 /* Plan view content padding */
-#view-plan > div { padding-bottom: 2rem; padding-right: 2rem; }
+#view-plan > div { padding-bottom: 1.5rem; padding-right: 0; }
+@media (min-width: 640px) {
+  #view-plan > div { padding-bottom: 2rem; padding-right: 2rem; }
+}
 
 /* Print */
 @media print {

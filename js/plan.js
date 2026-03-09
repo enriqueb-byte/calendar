@@ -1727,6 +1727,8 @@ function planInit() {
 
   document.getElementById('manageCategoriesBtn').addEventListener('click', openCategoriesModal);
   document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+  var settingsBtnDesktop = document.getElementById('settingsBtnDesktop');
+  if (settingsBtnDesktop) settingsBtnDesktop.addEventListener('click', openSettingsModal);
   document.getElementById('settingsModalClose').addEventListener('click', closeSettingsModal);
   document.getElementById('settingsBackdrop').addEventListener('click', closeSettingsModal);
   document.getElementById('settingsOptionReset').addEventListener('click', showSettingsResetPanel);

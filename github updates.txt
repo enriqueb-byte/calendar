@@ -1,0 +1,5 @@
+Stage: git add .
+
+Commit: git commit -m "changed the background color"
+
+Push: git push
