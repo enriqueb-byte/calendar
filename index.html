@@ -35,108 +35,153 @@
 </head>
 <body class="font-sans antialiased min-h-screen bg-ink-50">
   <div id="printLegendOnly" class="print-legend-only-container" aria-hidden="true"></div>
-  <!-- Header: title, Plan / Track / Reflect tabs, Settings -->
-  <header class="sticky top-0 z-50 no-print bg-white/95 backdrop-blur border-b border-ink-100">
-    <div class="max-w-[1920px] mx-auto w-full px-4 sm:px-10 lg:px-12 pt-3 pb-2 sm:pt-4 sm:pb-0 min-h-0">
-      <div class="header-inner flex flex-col sm:flex-row sm:items-stretch gap-3 sm:gap-0 w-full">
+  <!-- Header: full-width strip; content in site-container for alignment -->
+  <header class="sticky top-0 z-50 no-print w-full header-full-width-bg">
+    <div class="site-container max-w-[1920px] mx-auto w-full px-4 sm:px-10 lg:px-12 box-border">
+      <div class="pt-3 pb-2 sm:pt-4 sm:pb-0 min-h-0">
+        <div class="header-inner flex flex-col sm:flex-row sm:items-stretch gap-3 sm:gap-0 w-full">
         <div class="header-row-title flex items-center justify-between gap-2 min-h-[2.25rem]">
           <h1 id="appTitle" class="app-title-editable text-xl sm:text-2xl lg:text-3xl font-bold text-ink-900 shrink-0 leading-none outline-none focus:ring-2 focus:ring-accent-500 focus:ring-inset rounded px-1 -mx-1 min-w-[2ch]" contenteditable="true" spellcheck="false" data-placeholder="My Year" aria-label="Calendar title">My Year</h1>
-          <button type="button" id="settingsBtn" class="sm:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-100 transition-colors shrink-0 touch-manipulation" aria-label="Settings" title="Settings">
+          <div class="flex items-center gap-1.5 sm:hidden">
+            <button type="button" id="mobileCalendarBtn" class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-100 transition-colors shrink-0 touch-manipulation" aria-label="Calendar options" title="Calendar options">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </button>
+            <button type="button" id="mobileLegendBtn" class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-100 transition-colors shrink-0 touch-manipulation" aria-label="Edit categories" title="Edit categories">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            </button>
+            <button type="button" id="settingsBtn" class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-100 transition-colors shrink-0 touch-manipulation" aria-label="Settings" title="Settings">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           </button>
+          </div>
         </div>
-        <div class="view-toggle-group flex items-stretch w-full sm:max-w-none" role="tablist" aria-label="View mode">
+        <div class="header-tabs-row flex items-stretch w-full sm:max-w-none gap-0">
           <span class="hidden sm:inline-flex view-toggle-buffer flex-1 min-w-0" aria-hidden="true"></span>
-          <button type="button" id="viewTogglePlan" class="view-toggle-btn flex-1 min-w-0 inline-flex items-center justify-center px-3 sm:px-4 py-3 sm:py-2.5 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors min-h-[2.75rem] sm:h-[2.25rem] box-border touch-manipulation" aria-pressed="true" aria-label="Plan view">Plan</button>
-          <button type="button" id="viewToggleAudit" class="view-toggle-btn flex-1 min-w-0 inline-flex items-center justify-center px-3 sm:px-4 py-3 sm:py-2.5 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors min-h-[2.75rem] sm:h-[2.25rem] box-border touch-manipulation" aria-pressed="false" aria-label="Track view">Track</button>
-          <button type="button" id="viewToggleReflect" class="view-toggle-btn flex-1 min-w-0 inline-flex items-center justify-center px-3 sm:px-4 py-3 sm:py-2.5 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors min-h-[2.75rem] sm:h-[2.25rem] box-border touch-manipulation" aria-pressed="false" aria-label="Reflect view">Reflect</button>
+          <div class="view-toggle-group flex items-stretch flex-1 min-w-0 sm:flex-none" role="tablist" aria-label="View mode">
+            <button type="button" id="viewTogglePlan" class="view-toggle-btn flex-1 min-w-0 inline-flex items-center justify-center px-3 sm:px-4 py-3 sm:py-2.5 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors min-h-[2.75rem] sm:h-[2.25rem] box-border touch-manipulation" aria-pressed="true" aria-label="Plan view">Plan</button>
+            <button type="button" id="viewToggleAudit" class="view-toggle-btn flex-1 min-w-0 inline-flex items-center justify-center px-3 sm:px-4 py-3 sm:py-2.5 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors min-h-[2.75rem] sm:h-[2.25rem] box-border touch-manipulation" aria-pressed="false" aria-label="Track view">Track</button>
+            <button type="button" id="viewToggleReflect" class="view-toggle-btn flex-1 min-w-0 inline-flex items-center justify-center px-3 sm:px-4 py-3 sm:py-2.5 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors min-h-[2.75rem] sm:h-[2.25rem] box-border touch-manipulation" aria-pressed="false" aria-label="Reflect view">Reflect</button>
+          </div>
           <span class="hidden sm:inline-flex view-toggle-buffer flex-1 min-w-0" aria-hidden="true"></span>
           <div class="hidden sm:flex justify-end items-center gap-2 shrink-0 self-center">
-            <button type="button" id="settingsBtnDesktop" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors h-[2.25rem] box-border shrink-0" aria-label="Settings" title="Settings">
-              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-              Settings
+            <button type="button" id="desktopCalendarBtn" class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-100 transition-colors shrink-0" aria-label="Calendar options" title="Calendar options">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </button>
+            <button type="button" id="desktopLegendBtn" class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-100 transition-colors shrink-0" aria-label="Edit categories" title="Edit categories">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            </button>
+            <button type="button" id="settingsBtnDesktop" class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-100 transition-colors shrink-0" aria-label="Settings" title="Settings">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </button>
           </div>
         </div>
+        </div>
+        </div>
       </div>
+      <div class="h-4 sm:h-6 flex-shrink-0" aria-hidden="true"></div>
     </div>
-    <div class="h-4 sm:h-6 flex-shrink-0" aria-hidden="true"></div>
   </header>
 
-  <main id="app-main" class="max-w-[1920px] mx-auto py-4 sm:py-8 px-4 sm:px-10 lg:px-12">
+  <main id="app-main" class="py-4 sm:py-8 w-full">
+    <div class="site-container max-w-[1920px] mx-auto w-full px-4 sm:px-10 lg:px-12 box-border">
     <section id="view-plan" role="region" aria-label="Plan">
-      <div class="flex flex-col lg:flex-row gap-6 items-start w-full">
-        <aside id="legendSidebar" class="no-print lg:w-56 xl:w-64 flex-shrink-0 order-1 lg:order-1 pt-0">
-          <div class="space-y-4 pt-0">
-            <div class="bg-white rounded-xl border border-ink-200 shadow-sm p-3">
-              <div class="flex flex-wrap gap-2 items-center">
-                <select id="yearSelect" class="rounded border border-ink-200 px-2 py-2 sm:py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer min-w-0 flex-1 min-h-[2.5rem] sm:min-h-0 touch-manipulation" aria-label="Start year"></select>
-                <select id="startMonthSelect" class="rounded border border-ink-200 px-2 py-2 sm:py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer min-w-0 flex-1 min-h-[2.5rem] sm:min-h-0 touch-manipulation" aria-label="Start month"></select>
-              </div>
-              <button type="button" id="calendarControlsToggle" class="mt-2 w-full flex items-center justify-center gap-1 py-1.5 text-xs text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded transition-colors" aria-expanded="false" aria-controls="calendarControlsExpandable">
-                <span id="calendarControlsToggleLabel">More options</span>
-                <span id="calendarControlsToggleArrow" class="inline-block transition-transform">▼</span>
-              </button>
-              <div id="calendarControlsExpandable" class="hidden pt-2 mt-2 border-t border-ink-100 space-y-2" role="region" aria-label="More calendar options">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-ink-500 w-16 shrink-0">Duration</span>
-                  <select id="durationSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Number of months"></select>
+      <div class="flex flex-col lg:flex-row gap-6 items-start w-full plan-view-inner">
+        <aside id="legendSidebar" class="no-print lg:w-56 xl:w-64 flex-shrink-0 order-2 lg:order-1 pt-0 sidebar-aside">
+          <div class="space-y-4 pt-0 sidebar-inner">
+            <div id="sidebarDrawerBackdrop" class="sidebar-drawer-backdrop" aria-hidden="true"></div>
+            <div class="sidebar-drawer-content" id="sidebarDrawerContent" role="dialog" aria-modal="true" data-drawer-view="">
+              <div class="sidebar-drawer-card">
+                <div class="sidebar-drawer-header">
+                  <h2 id="sidebarDrawerTitle" class="text-sm font-semibold text-ink-800">Calendar</h2>
+                  <button type="button" id="sidebarDrawerClose" class="sidebar-drawer-close rounded-lg p-2 text-ink-500 hover:bg-ink-100 hover:text-ink-700 transition-colors touch-manipulation" aria-label="Close">✕</button>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-ink-500 w-16 shrink-0">Start</span>
-                  <select id="weekStartSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Start day">
-                    <option value="0">Sunday</option>
-                    <option value="1">Monday</option>
-                  </select>
+                <div class="sidebar-drawer-body space-y-4">
+                <div class="bg-white rounded-xl border border-ink-200 shadow-sm p-3 sidebar-options-block">
+                  <div class="flex flex-wrap gap-2 items-center">
+                    <select id="yearSelect" class="rounded border border-ink-200 px-2 py-2 sm:py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer min-w-0 flex-1 min-h-[2.5rem] sm:min-h-0 touch-manipulation" aria-label="Start year"></select>
+                    <select id="startMonthSelect" class="rounded border border-ink-200 px-2 py-2 sm:py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer min-w-0 flex-1 min-h-[2.5rem] sm:min-h-0 touch-manipulation" aria-label="Start month"></select>
+                  </div>
+                  <button type="button" id="calendarControlsToggle" class="mt-2 w-full flex items-center justify-center gap-1 py-1.5 text-xs text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded transition-colors" aria-expanded="false" aria-controls="calendarControlsExpandable">
+                    <span id="calendarControlsToggleLabel">More options</span>
+                    <span id="calendarControlsToggleArrow" class="inline-block transition-transform">▼</span>
+                  </button>
+                  <div id="calendarControlsExpandable" class="hidden pt-2 mt-2 border-t border-ink-100 space-y-2" role="region" aria-label="More calendar options">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-ink-500 w-16 shrink-0">Duration</span>
+                      <select id="durationSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Number of months"></select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-ink-500 w-16 shrink-0">Start</span>
+                      <select id="weekStartSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Start day">
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                      </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-ink-500 w-16 shrink-0">View</span>
+                      <select id="viewStyleSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Months per row">
+                        <option value="1">1 per row</option>
+                        <option value="2">2 per row</option>
+                        <option value="3">3 per row</option>
+                        <option value="4" selected>4 per row</option>
+                        <option value="5">5 per row</option>
+                        <option value="6">6 per row</option>
+                      </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-ink-500 w-16 shrink-0">Holidays</span>
+                      <select id="holidaysSelect" class="flex-1 min-w-0 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Holidays">
+                        <option value="none" selected>None</option>
+                        <option value="canada">Canada</option>
+                        <option value="usa">USA</option>
+                      </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="hidePastMonthsCheckbox" class="rounded border-ink-300 text-ink-700 focus:ring-accent-500" aria-label="Hide past months">
+                        <span class="text-xs text-ink-700">Hide past months</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-ink-500 w-16 shrink-0">View</span>
-                  <select id="viewStyleSelect" class="flex-1 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Months per row">
-                    <option value="1">1 per row</option>
-                    <option value="2">2 per row</option>
-                    <option value="3">3 per row</option>
-                    <option value="4" selected>4 per row</option>
-                    <option value="5">5 per row</option>
-                    <option value="6">6 per row</option>
-                  </select>
+                <div id="drawerLegendSlot">
+                  <div class="bg-white rounded-xl border border-ink-200 shadow-sm p-4 sidebar-legend-block">
+                    <div class="flex items-center justify-between mb-3">
+                      <h2 class="text-sm font-semibold text-ink-800 uppercase tracking-wider">Legend</h2>
+                      <button type="button" id="manageCategoriesBtn" class="text-xs text-ink-500 hover:text-ink-700" title="Manage categories">Edit</button>
+                    </div>
+                    <div id="legendList" class="text-sm text-ink-700">
+                      <ul id="legendListInner" class="space-y-2">
+                        <li id="legendEmpty" class="text-ink-400 italic">No events yet</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-ink-500 w-16 shrink-0">Holidays</span>
-                  <select id="holidaysSelect" class="flex-1 min-w-0 rounded border border-ink-200 px-2 py-1.5 text-xs text-ink-800 bg-white focus:ring-2 focus:ring-accent-500 focus:border-accent-500 cursor-pointer" aria-label="Holidays">
-                    <option value="none" selected>None</option>
-                    <option value="canada">Canada</option>
-                    <option value="usa">USA</option>
-                  </select>
                 </div>
               </div>
             </div>
-            <div class="bg-white rounded-xl border border-ink-200 shadow-sm p-4">
-              <div class="flex items-center justify-between mb-3">
-                <h2 class="text-sm font-semibold text-ink-800 uppercase tracking-wider">Legend</h2>
-                <button type="button" id="manageCategoriesBtn" class="text-xs text-ink-500 hover:text-ink-700" title="Manage categories">Edit</button>
-              </div>
-              <div id="legendList" class="text-sm text-ink-700">
-                <ul id="legendListInner" class="space-y-2">
-                  <li id="legendEmpty" class="text-ink-400 italic">No events yet</li>
-                </ul>
-              </div>
-            </div>
+            <div id="sidebarLegendSlot" class="sidebar-legend-slot hidden lg:block"></div>
             <div id="multiSelectBar" class="sticky-event-bar flex flex-col gap-3 mt-4 p-3 rounded-xl border border-ink-200 bg-white shadow-sm">
               <button type="button" id="addEventToSelectedBtn" class="w-full py-3 rounded-lg text-sm font-semibold transition-colors flex flex-col items-center gap-0.5 add-event-btn-empty">
                 <span id="addEventToSelectedBtnLabel">Select date</span>
                 <span id="multiSelectCount" class="text-xs font-normal opacity-90">(0 dates selected)</span>
               </button>
-              <button type="button" id="clearSelectionBtn" class="w-full py-2 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-ink-200 disabled:hover:text-ink-600" title="Deselect all dates" disabled>Clear selection</button>
-              <button type="button" id="clearEventsFromSelectedBtn" class="w-full py-2 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-ink-200 disabled:hover:text-ink-600" title="Remove events from selected dates" disabled>Delete Events</button>
+              <button type="button" id="clearSelectionBtn" class="multi-select-aux-btn w-full py-2 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-ink-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-ink-200 disabled:hover:text-ink-600 whitespace-nowrap" title="Deselect all dates" disabled>
+                <span class="multi-select-label multi-select-label-long">Clear selection</span>
+                <span class="multi-select-label multi-select-label-short">Clear</span>
+              </button>
+              <button type="button" id="clearEventsFromSelectedBtn" class="multi-select-aux-btn w-full py-2 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:border-ink-200 disabled:hover:text-ink-600 whitespace-nowrap" title="Remove events from selected dates" disabled>
+                <span class="multi-select-label multi-select-label-long">Delete Events</span>
+                <span class="multi-select-label multi-select-label-short">Delete</span>
+              </button>
             </div>
-            <div id="selectedDateContext" class="mt-4 p-3 rounded-xl border border-ink-200 bg-white shadow-sm hidden">
-              <h3 id="selectedDateContextTitle" class="text-xs font-semibold uppercase tracking-wider text-ink-500 mb-2">Events on selected date(s)</h3>
-              <div id="selectedDateContextList" class="text-sm text-ink-700 space-y-2 max-h-48 overflow-y-auto">
+            <div id="selectionEventSummaryWrap" class="hidden mt-4 p-3 rounded-xl border border-ink-200 bg-white shadow-sm no-print" aria-label="Events on selected dates">
+              <h3 id="selectionEventSummaryTitle" class="text-xs font-semibold uppercase tracking-wider text-ink-500 mb-2">Events on selected date(s)</h3>
+              <div id="selectionEventSummaryList" class="text-sm text-ink-700 space-y-1 max-h-64 overflow-y-auto">
               </div>
             </div>
           </div>
         </aside>
-        <div class="flex-1 min-w-0 order-2 lg:order-2 pt-0 w-full">
+        <div class="flex-1 min-w-0 order-1 lg:order-2 pt-0 w-full px-0">
           <div id="monthsGrid" class="months-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             <!-- Month cards injected by JS -->
           </div>
@@ -149,7 +194,43 @@
         <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-4 flex flex-col min-w-0" aria-labelledby="generalHeading">
           <h2 id="generalHeading" class="text-sm font-bold text-ink-800 tracking-tight mb-2">Daily Life</h2>
           <p class="text-xs text-ink-600 mb-2">Events by category—family, work, health, and more.</p>
-          <div id="generalByCategory" class="space-y-3 flex-1 min-h-0 overflow-auto"></div>
+          <!-- Category bar chart (always visible) -->
+          <div id="dailyLifeCategoryChart" class="daily-life-chart mb-4" aria-label="Events by category"></div>
+          <!-- Event list and date range (collapsible via heading) -->
+          <div id="dailyLifeEventListPanel" class="mt-2" role="region" aria-label="Event list and date range">
+            <button type="button" id="dailyLifeEventListToggle" class="daily-life-heading-toggle w-full flex items-center justify-between gap-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded transition-colors border-0 bg-transparent cursor-pointer" aria-expanded="true" aria-controls="dailyLifeEventListContent">
+              <span>Events in selected range</span>
+              <span id="dailyLifeEventListToggleArrow" class="inline-block transition-transform shrink-0" aria-hidden="true">▼</span>
+            </button>
+            <div id="dailyLifeEventListContent" class="daily-life-panel overflow-hidden">
+            <div class="daily-life-range-row flex flex-wrap items-center gap-2 mb-2 mt-1.5">
+              <label class="inline-flex items-center gap-1 text-xs text-ink-600">
+                <span>From</span>
+                <input type="date" id="dailyLifeRangeStart" class="daily-life-range-input rounded border border-ink-200 px-2 py-1 text-xs text-ink-800 bg-white focus:ring-1 focus:ring-accent-500 focus:border-accent-500" aria-label="Range start" />
+              </label>
+              <label class="inline-flex items-center gap-1 text-xs text-ink-600">
+                <span>To</span>
+                <input type="date" id="dailyLifeRangeEnd" class="daily-life-range-input rounded border border-ink-200 px-2 py-1 text-xs text-ink-800 bg-white focus:ring-1 focus:ring-accent-500 focus:border-accent-500" aria-label="Range end" />
+              </label>
+            </div>
+            <div id="dailyLifeFilters" class="daily-life-filters flex flex-wrap items-center gap-2 mb-2">
+              <label class="inline-flex items-center gap-1 text-xs text-ink-600">
+                <span>Category</span>
+                <select id="dailyLifeFilterCategory" class="daily-life-filter-select rounded border border-ink-200 px-2 py-1 text-xs text-ink-800 bg-white focus:ring-1 focus:ring-accent-500 focus:border-accent-500">
+                  <option value="">All</option>
+                </select>
+              </label>
+              <span class="text-xs text-ink-600">Tag</span>
+              <div id="dailyLifeFilterTagPills" class="inline-flex flex-wrap gap-1">
+                <button type="button" class="daily-life-tag-pill rounded px-2 py-0.5 text-xs border transition-colors" data-tag="" aria-pressed="true">All</button>
+                <button type="button" class="daily-life-tag-pill rounded px-2 py-0.5 text-xs border transition-colors" data-tag="waypost" aria-pressed="false">Mini-Adventure</button>
+                <button type="button" class="daily-life-tag-pill rounded px-2 py-0.5 text-xs border transition-colors" data-tag="misogi" aria-pressed="false">Misogi</button>
+              </div>
+            </div>
+            <div id="dailyLifeEventList" class="space-y-1 max-h-64 overflow-y-auto border border-ink-200 rounded-lg p-2 text-sm text-ink-700"></div>
+            </div>
+          </div>
+          <div id="generalByCategory" class="space-y-3 flex-1 min-h-0 overflow-auto hidden"></div>
         </section>
         <!-- 2. Mini-Adventures -->
         <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-4 flex flex-col min-w-0">
@@ -392,6 +473,7 @@
         </section>
       </div>
     </section>
+    </div>
   </main>
 
   <!-- Date context popover -->
@@ -460,23 +542,27 @@
   <!-- Settings modal -->
   <div id="settingsModal" class="fixed inset-0 z-50 hidden no-print" aria-hidden="true">
     <div class="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" id="settingsBackdrop"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-      <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-xl border border-ink-200 p-6">
+    <div id="settingsOverlay" class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+      <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-xl border border-ink-200 pointer-events-auto">
+        <div class="flex items-center justify-between p-4 pb-0">
+          <h3 class="text-lg font-semibold text-ink-900">Settings</h3>
+          <button type="button" id="settingsModalClose" class="rounded-lg p-2 text-ink-500 hover:bg-ink-100 hover:text-ink-700 transition-colors touch-manipulation -mr-2" aria-label="Close">✕</button>
+        </div>
+        <div class="p-4 pt-3">
         <div id="settingsMenu" class="settings-panel">
-          <h3 class="text-lg font-semibold text-ink-900 mb-4">Settings</h3>
           <ul class="space-y-1" role="menu">
-            <li><button type="button" id="settingsOptionReset" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-ink-700 hover:bg-ink-100 transition-colors" role="menuitem">Reset to defaults</button></li>
+            <li><button type="button" id="settingsOptionReset" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-amber-700 hover:bg-amber-50 transition-colors" role="menuitem">Reset (Caution – Deletes Data)</button></li>
           </ul>
-          <button type="button" id="settingsModalClose" class="mt-4 px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Done</button>
         </div>
         <div id="settingsResetPanel" class="settings-panel hidden">
           <button type="button" id="settingsResetBack" class="mb-3 text-sm text-ink-500 hover:text-ink-700 flex items-center gap-1">← Back</button>
-          <h3 class="text-lg font-semibold text-ink-900 mb-4">Reset to defaults</h3>
+          <h3 class="text-lg font-semibold text-ink-900 mb-4">Reset (Caution – Deletes Data)</h3>
           <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">This will reset the calendar back to its default state. All events, categories, and preferences will be lost.</p>
           <div class="flex gap-3">
             <button type="button" id="settingsResetBtn" class="px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700">Reset</button>
             <button type="button" id="settingsResetCancel" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Cancel</button>
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -503,9 +589,20 @@
   <!-- Event modal -->
   <div id="eventModal" class="fixed inset-0 z-50 hidden no-print" aria-hidden="true">
     <div class="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" id="modalBackdrop"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-      <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-ink-200 p-6 my-auto max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-semibold text-ink-900 mb-4" id="modalTitle">Add event</h3>
+    <div id="eventModalOverlay" class="fixed inset-0 flex flex-col items-center justify-center p-4 overflow-y-auto pointer-events-none">
+      <div class="event-modal-inner flex flex-col md:flex-row gap-4 items-start justify-center w-full max-w-4xl my-auto pointer-events-auto">
+        <div id="selectedDateContextWrap" class="event-summary-panel hidden w-full md:w-72 md:max-w-[18rem] flex-shrink-0 order-2 md:order-1">
+          <div id="selectedDateContext" class="p-3 rounded-xl border border-ink-200 bg-white shadow-sm hidden">
+            <h3 id="selectedDateContextTitle" class="text-xs font-semibold uppercase tracking-wider text-ink-500 mb-2">Events on selected date(s)</h3>
+            <div id="selectedDateContextList" class="text-sm text-ink-700 space-y-2 max-h-[min(48rem,90vh)] overflow-y-auto">
+            </div>
+          </div>
+        </div>
+        <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-ink-200 p-6 max-h-[90vh] overflow-y-auto flex-shrink-0 order-1 md:order-2">
+        <div class="flex items-center justify-between gap-2 mb-4">
+          <h3 class="text-lg font-semibold text-ink-900" id="modalTitle">Add event</h3>
+          <button type="button" id="eventModalClose" class="rounded-lg p-2 text-ink-500 hover:bg-ink-100 hover:text-ink-700 transition-colors -mr-2" aria-label="Close">✕</button>
+        </div>
         <form id="eventForm" class="space-y-4">
           <input type="hidden" id="eventDateKey" />
           <input type="hidden" id="eventIndex" value="" />
@@ -567,9 +664,12 @@
             <button type="button" id="modalCancel" class="px-4 py-3 sm:py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100 touch-manipulation min-h-[2.75rem] sm:min-h-0">Cancel</button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   </div>
+
+  <div id="mobileEventBarAnchor" class="mobile-event-bar-anchor" aria-hidden="true"></div>
 
   <script src="js/app.js"></script>
   <script src="js/plan.js"></script>

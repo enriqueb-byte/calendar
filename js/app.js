@@ -56,6 +56,7 @@ var state = {
   viewStyle: 4,
   durationMonths: 12,
   holidaySet: 'none',
+  hidePastMonths: false,
   events: {},
   categories: [],
   selectedDateKey: null,
@@ -138,14 +139,15 @@ function getPrefs() {
     var raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return {};
     var p = JSON.parse(raw);
-    return { weekStart: p.weekStart, viewStyle: p.viewStyle, startMonth: p.startMonth, durationMonths: p.durationMonths, year: p.year, holidaySet: p.holidaySet, title: p.title, misogiTitle: p.misogiTitle, misogiWho: p.misogiWho, misogiWhere: p.misogiWhere, misogiDescription: p.misogiDescription, misogiWhatSetsApart: p.misogiWhatSetsApart, misogiPreparation: p.misogiPreparation, misogiOutcome: p.misogiOutcome, misogiLessons: p.misogiLessons, misogiPhoto: p.misogiPhoto, misogiImages: p.misogiImages, misogiQualified: p.misogiQualified, waypostStatuses: p.waypostStatuses, generalEventStatuses: (p.generalEventStatuses && typeof p.generalEventStatuses === 'object') ? p.generalEventStatuses : {}, lifeDateOfBirth: p.lifeDateOfBirth, lifeGender: p.lifeGender, lifeExpectancyOverride: p.lifeExpectancyOverride, lifeExpectancyOverrideActive: p.lifeExpectancyOverrideActive, lifeChildren: Array.isArray(p.lifeChildren) ? p.lifeChildren.slice() : [], lifeHasChildren: p.lifeHasChildren === true, lifeParents: Array.isArray(p.lifeParents) ? p.lifeParents.slice() : [], lifeHasLivingParents: p.lifeHasLivingParents === true, lifeMilestones: Array.isArray(p.lifeMilestones) ? p.lifeMilestones.slice() : [] };
+    var viewMode = (p.viewMode === 'plan' || p.viewMode === 'audit' || p.viewMode === 'reflect') ? p.viewMode : undefined;
+    return { weekStart: p.weekStart, viewStyle: p.viewStyle, startMonth: p.startMonth, durationMonths: p.durationMonths, year: p.year, holidaySet: p.holidaySet, hidePastMonths: p.hidePastMonths, title: p.title, misogiTitle: p.misogiTitle, misogiWho: p.misogiWho, misogiWhere: p.misogiWhere, misogiDescription: p.misogiDescription, misogiWhatSetsApart: p.misogiWhatSetsApart, misogiPreparation: p.misogiPreparation, misogiOutcome: p.misogiOutcome, misogiLessons: p.misogiLessons, misogiPhoto: p.misogiPhoto, misogiImages: p.misogiImages, misogiQualified: p.misogiQualified, waypostStatuses: p.waypostStatuses, generalEventStatuses: (p.generalEventStatuses && typeof p.generalEventStatuses === 'object') ? p.generalEventStatuses : {}, lifeDateOfBirth: p.lifeDateOfBirth, lifeGender: p.lifeGender, lifeExpectancyOverride: p.lifeExpectancyOverride, lifeExpectancyOverrideActive: p.lifeExpectancyOverrideActive, lifeChildren: Array.isArray(p.lifeChildren) ? p.lifeChildren.slice() : [], lifeHasChildren: p.lifeHasChildren === true, lifeParents: Array.isArray(p.lifeParents) ? p.lifeParents.slice() : [], lifeHasLivingParents: p.lifeHasLivingParents === true, lifeMilestones: Array.isArray(p.lifeMilestones) ? p.lifeMilestones.slice() : [], viewMode: viewMode };
   } catch (e) {
     return {};
   }
 }
 
 function savePrefs() {
-  localStorage.setItem(PREFS_KEY, JSON.stringify({ weekStart: state.weekStart, viewStyle: state.viewStyle, startMonth: state.startMonth, durationMonths: state.durationMonths, year: state.year, holidaySet: state.holidaySet, title: state.title, misogiTitle: state.misogiTitle, misogiWho: state.misogiWho, misogiWhere: state.misogiWhere, misogiDescription: state.misogiDescription, misogiWhatSetsApart: state.misogiWhatSetsApart, misogiPreparation: state.misogiPreparation, misogiOutcome: state.misogiOutcome, misogiLessons: state.misogiLessons, misogiPhoto: state.misogiPhoto, misogiImages: state.misogiImages, misogiQualified: state.misogiQualified, waypostStatuses: state.waypostStatuses, generalEventStatuses: state.generalEventStatuses, lifeDateOfBirth: state.lifeDateOfBirth, lifeGender: state.lifeGender, lifeExpectancyOverride: state.lifeExpectancyOverride, lifeExpectancyOverrideActive: state.lifeExpectancyOverrideActive, lifeChildren: state.lifeChildren.slice(), lifeHasChildren: state.lifeHasChildren, lifeParents: state.lifeParents.slice(), lifeHasLivingParents: state.lifeHasLivingParents, lifeMilestones: state.lifeMilestones.slice() }));
+  localStorage.setItem(PREFS_KEY, JSON.stringify({ weekStart: state.weekStart, viewStyle: state.viewStyle, startMonth: state.startMonth, durationMonths: state.durationMonths, year: state.year, holidaySet: state.holidaySet, hidePastMonths: state.hidePastMonths, title: state.title, misogiTitle: state.misogiTitle, misogiWho: state.misogiWho, misogiWhere: state.misogiWhere, misogiDescription: state.misogiDescription, misogiWhatSetsApart: state.misogiWhatSetsApart, misogiPreparation: state.misogiPreparation, misogiOutcome: state.misogiOutcome, misogiLessons: state.misogiLessons, misogiPhoto: state.misogiPhoto, misogiImages: state.misogiImages, misogiQualified: state.misogiQualified, waypostStatuses: state.waypostStatuses, generalEventStatuses: state.generalEventStatuses, lifeDateOfBirth: state.lifeDateOfBirth, lifeGender: state.lifeGender, lifeExpectancyOverride: state.lifeExpectancyOverride, lifeExpectancyOverrideActive: state.lifeExpectancyOverrideActive, lifeChildren: state.lifeChildren.slice(), lifeHasChildren: state.lifeHasChildren, lifeParents: state.lifeParents.slice(), lifeHasLivingParents: state.lifeHasLivingParents, lifeMilestones: state.lifeMilestones.slice(), viewMode: state.viewMode }));
 }
 
 function getEvents() {
@@ -201,9 +203,16 @@ function switchView(mode) {
   var btnAudit = document.getElementById('viewToggleAudit');
   var btnReflect = document.getElementById('viewToggleReflect');
 
+  if (mode !== 'plan') {
+    if (typeof CalendarPlanner.closeSidebarDrawer === 'function') CalendarPlanner.closeSidebarDrawer();
+    document.body.style.overflow = '';
+  }
+
   if (viewPlan) viewPlan.hidden = mode !== 'plan';
   if (viewAudit) viewAudit.hidden = mode !== 'audit';
   if (viewReflect) viewReflect.hidden = mode !== 'reflect';
+
+  document.body.classList.toggle('view-plan-active', mode === 'plan');
 
   if (btnPlan) btnPlan.setAttribute('aria-pressed', mode === 'plan' ? 'true' : 'false');
   if (btnAudit) btnAudit.setAttribute('aria-pressed', mode === 'audit' ? 'true' : 'false');
@@ -215,6 +224,7 @@ function switchView(mode) {
   if (mode === 'reflect' && typeof CalendarPlanner.renderReflectDashboard === 'function') {
     CalendarPlanner.renderReflectDashboard();
   }
+  if (typeof savePrefs === 'function') savePrefs();
 }
 
 function init() {
@@ -228,6 +238,8 @@ function init() {
   if (prefs.startMonth !== undefined) state.startMonth = Math.max(0, Math.min(11, prefs.startMonth));
   if (prefs.durationMonths !== undefined) state.durationMonths = Math.max(1, Math.min(24, prefs.durationMonths));
   if (prefs.holidaySet !== undefined && (prefs.holidaySet === 'none' || prefs.holidaySet === 'canada' || prefs.holidaySet === 'usa')) state.holidaySet = prefs.holidaySet;
+  if (prefs.hidePastMonths !== undefined) state.hidePastMonths = !!prefs.hidePastMonths;
+  if (prefs.viewMode === 'plan' || prefs.viewMode === 'audit' || prefs.viewMode === 'reflect') state.viewMode = prefs.viewMode;
   if (typeof prefs.title === 'string' && prefs.title.trim() !== '') state.title = prefs.title.trim();
   if (typeof prefs.misogiTitle === 'string') state.misogiTitle = prefs.misogiTitle;
   if (typeof prefs.misogiWho === 'string') state.misogiWho = prefs.misogiWho;
@@ -285,7 +297,7 @@ function init() {
 
   if (typeof CalendarPlanner.renderMonths === 'function') CalendarPlanner.renderMonths();
   if (typeof CalendarPlanner.setWeekStart === 'function') CalendarPlanner.setWeekStart(state.weekStart);
-  switchView('plan');
+  switchView(state.viewMode);
 
   var btnPlan = document.getElementById('viewTogglePlan');
   var btnAudit = document.getElementById('viewToggleAudit');

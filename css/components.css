@@ -115,6 +115,77 @@
   filter: brightness(0.96);
 }
 
+/* Daily Life: category bar chart and collapsible event list */
+.daily-life-chart {
+  min-height: 2rem;
+}
+.daily-life-chart-row {
+  min-height: 1rem;
+}
+.daily-life-chart-bar {
+  min-width: 2px;
+  transition: width 0.2s ease;
+}
+/* Daily Life: collapsible event list via heading */
+.daily-life-heading-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
+.daily-life-panel {
+  transition: max-height 0.25s ease-out, opacity 0.2s ease;
+}
+.daily-life-panel.daily-life-panel-collapsed {
+  max-height: 0 !important;
+  overflow: hidden;
+  opacity: 0;
+  margin-top: 0 !important;
+}
+.daily-life-panel:not(.daily-life-panel-collapsed) {
+  max-height: 80vh;
+  opacity: 1;
+}
+
+/* Daily Life month selector: compact pills */
+#dailyLifeMonthCheckboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.daily-life-month-pill {
+  min-width: 2.75rem;
+  min-height: 1.75rem;
+  cursor: pointer;
+}
+.daily-life-month-pill:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.5);
+}
+.daily-life-month-pill[aria-pressed="true"] {
+  background-color: #e8e8ec;
+  border-color: #b8b8c0;
+  color: #1a1a1a;
+}
+
+/* Daily Life event list filters */
+.daily-life-filters {
+  min-height: 1.5rem;
+}
+.daily-life-filter-select {
+  min-width: 4rem;
+  max-width: 6rem;
+}
+.daily-life-range-input {
+  min-width: 8rem;
+}
+.daily-life-tag-pill {
+  cursor: pointer;
+  white-space: nowrap;
+}
+.daily-life-tag-pill:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.5);
+}
+
 .event-tag-icon {
   display: inline-flex;
   align-items: center;
@@ -176,28 +247,254 @@
   #multiSelectBar button:not(#addEventToSelectedBtn) { min-height: 2.5rem; }
 }
 
-/* Sticky event bar: stays below header when scrolling */
+/* Sticky event bar: desktop = below header when scrolling; mobile = fixed at bottom. Only on Plan tab. */
 .sticky-event-bar {
   position: sticky;
   z-index: 30;
   top: 5.5rem;
   margin-bottom: 0.25rem;
 }
+/* Hide sticky event bar (and mobile anchor) when not on Plan view */
+body:not(.view-plan-active) .mobile-event-bar-anchor {
+  display: none !important;
+}
+
+/* Mobile: anchor for event bar so it's viewport-fixed (direct child of body) */
+.mobile-event-bar-anchor {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.mobile-event-bar-anchor > * { pointer-events: auto; }
+
+/* Mobile: sidebar takes no layout space; legend and options only in modals. Desktop: sidebar visible with legend on page. */
+.plan-view-inner { padding-bottom: 8rem; }
+.sidebar-aside {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+  order: 2;
+}
+.sidebar-aside .sidebar-inner { position: relative; }
+
+@media (min-width: 1024px) {
+  .sidebar-aside {
+    position: static !important;
+    width: 14rem !important;
+    height: auto !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+  }
+  .sidebar-legend-slot { display: block !important; }
+}
+@media (min-width: 1280px) {
+  .sidebar-aside { width: 16rem !important; }
+}
+
+/* Legend and Calendar options: centered modal (like Settings), not slide-out. Close via X or click outside. */
+/* When calendar/legend drawer is open, main stacks above header so backdrop obscures header (like settings). */
+body.sidebar-drawer-open main {
+  position: relative;
+  z-index: 51;
+}
+
+.sidebar-drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 44;
+  pointer-events: auto;
+}
+.sidebar-drawer-backdrop.sidebar-drawer-backdrop-visible {
+  display: block !important;
+}
+.sidebar-drawer-content {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: none;
+}
+.sidebar-drawer-content.sidebar-drawer-open {
+  display: flex;
+  pointer-events: auto;
+}
+.sidebar-drawer-card {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 24rem;
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e5e5e7;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-drawer-content.drawer-view-options .sidebar-legend-block {
+  display: none !important;
+}
+.sidebar-drawer-content.drawer-view-options .sidebar-options-block {
+  display: block;
+}
+.sidebar-drawer-content.drawer-view-legend .sidebar-options-block {
+  display: none !important;
+}
+.sidebar-drawer-content.drawer-view-legend .sidebar-legend-block {
+  display: block;
+}
+.sidebar-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e5e7;
+  flex-shrink: 0;
+}
+.sidebar-drawer-close {
+  margin: -0.5rem;
+  padding: 0.5rem;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #747481;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 0.5rem;
+}
+.sidebar-drawer-close:hover {
+  color: #424249;
+  background: #eeeef0;
+}
+.sidebar-drawer-body {
+  padding: 1rem 1.25rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Calendar options: show all options (no "More options" collapse) in modal */
+#calendarControlsToggle {
+  display: none !important;
+}
+#calendarControlsExpandable {
+  display: block !important;
+  border-top: 1px solid #eeeef0;
+  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 639px) {
-  .sticky-event-bar { top: 7rem; }
+  .sticky-event-bar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    margin: 0 !important;
+    padding: 0.75rem 1rem !important;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0)) !important;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    z-index: 40;
+    pointer-events: auto;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+    box-sizing: border-box;
+  }
+  .sticky-event-bar,
+  .sticky-event-bar .flex {
+    min-width: 0;
+    width: 100%;
+  }
+  /* No selection: only "Select date" visible */
+  .sticky-event-bar:not(.has-selection) .multi-select-aux-btn {
+    display: none !important;
+  }
+  /* Has selection: all 3 on one line */
+  .sticky-event-bar.has-selection {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .sticky-event-bar.has-selection #addEventToSelectedBtn,
+  .sticky-event-bar.has-selection .multi-select-aux-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+  }
+  /* Short vs long labels: full words when space, short when narrow */
+  .multi-select-label-short {
+    display: none;
+  }
+  .multi-select-label-long {
+    display: inline;
+  }
+}
+@media (max-width: 380px) {
+  .multi-select-label-short {
+    display: inline !important;
+  }
+  .multi-select-label-long {
+    display: none !important;
+  }
+}
+
+/* Desktop: show only long labels so we don't get "Clear selection Clear" */
+.multi-select-label-short {
+  display: none;
+}
+.multi-select-label-long {
+  display: inline;
 }
 
 /* View toggle and title */
-.view-toggle-group { display: flex; border: 1px solid #d9d9de; border-radius: 0.5rem; overflow: hidden; padding-left: 0.25rem; padding-right: 0.25rem; gap: 0; }
-@media (min-width: 640px) {
-  .view-toggle-group { padding-left: 0.5rem; padding-right: 0.5rem; }
-}
+.view-toggle-group { display: flex; border: 1px solid #d9d9de; border-radius: 0.5rem; overflow: hidden; padding: 0; gap: 0; }
 .view-toggle-group-title { padding-right: 0.5rem; margin-right: 0; }
 .view-toggle-buffer { flex: 1; min-width: 0; }
 .view-toggle-btn { border: none; border-radius: 0; border-right: 1px solid #d9d9de; flex: 1; min-width: 0; }
 .view-toggle-btn:last-of-type { border-right: none; }
 .view-toggle-btn[aria-pressed="true"] { background: #e8e8ec; color: #1a1a1a; font-weight: 600; }
+/* First/last tab buttons fill to rounded corners so selected state has no gap */
+.view-toggle-group .view-toggle-btn:first-of-type { border-radius: 0.5rem 0 0 0.5rem; }
+.view-toggle-group .view-toggle-btn:last-of-type { border-radius: 0 0.5rem 0.5rem 0; }
 .app-title-editable:empty::before { content: attr(data-placeholder); color: #91919d; }
+
+/* Header: full-width white strip behind content (sides match header, alignment unchanged) */
+.header-full-width-bg {
+  position: relative;
+  background: transparent;
+}
+.header-full-width-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid #eeeef0;
+  z-index: -1;
+}
 
 /* Responsive: header and plan view */
 @media (max-width: 639px) {
@@ -248,9 +545,30 @@
 #lifeFactsToggle[aria-expanded="false"] #lifeFactsChevron { transform: rotate(-90deg); }
 
 /* Plan view content padding */
-#view-plan > div { padding-bottom: 1.5rem; padding-right: 0; }
+#view-plan > div { padding-bottom: 1.5rem; padding-right: 0; padding-left: 0; }
 @media (min-width: 640px) {
-  #view-plan > div { padding-bottom: 2rem; padding-right: 2rem; }
+  #view-plan > div { padding-bottom: 2rem; padding-right: 0; padding-left: 0; }
+}
+
+/* Desktop: top-align sidebar with calendar */
+@media (min-width: 1024px) {
+  .plan-view-inner {
+    align-items: flex-start;
+  }
+  #legendSidebar,
+  #legendSidebar .sidebar-inner,
+  .plan-view-inner > .flex-1 {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+  /* First visible block (options) aligns with calendar; space-y-4 would add top margin to drawer content as second child */
+  #legendSidebar .sidebar-inner > .sidebar-drawer-content {
+    margin-top: 0 !important;
+  }
+  /* Legend slot is third child—remove space-y-4 top margin so legend aligns with calendar */
+  #legendSidebar .sidebar-inner > #sidebarLegendSlot {
+    margin-top: 0 !important;
+  }
 }
 
 /* Print */

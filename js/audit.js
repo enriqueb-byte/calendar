@@ -28,6 +28,12 @@ var AUDIT_YEAR = new Date().getFullYear();
 var lifeBalanceChart = null;
 var popoverDateKey = null;
 var waypostDeletePending = null;
+/** Daily Life: date range (dateKey format yyyy-mm-dd). Defaults set from calendar range on first render. */
+var dailyLifeRangeStart = '';
+var dailyLifeRangeEnd = '';
+/** Daily Life list filters: category id, tag 'waypost'|'misogi'|''. */
+var dailyLifeFilterCategory = '';
+var dailyLifeFilterTag = '';
 
 var WaypostUtils = {
   DAYS_PER_YEAR: 365,
@@ -118,6 +124,205 @@ function getCategoryDistribution() {
     });
   }
   return counts;
+}
+
+/** Category counts for a set of date keys (all events, for Daily Life chart). */
+function getCategoryDistributionForDateKeys(dateKeys) {
+  var set = {};
+  dateKeys.forEach(function (dk) { set[dk] = true; });
+  var counts = {};
+  state.categories.forEach(function (cat) { counts[cat.id] = 0; });
+  for (var dk in state.events) {
+    if (!set[dk]) continue;
+    var list = state.events[dk] || [];
+    list.forEach(function (ev) {
+      var c = ev.category || '';
+      if (counts[c] !== undefined) counts[c]++;
+      else counts[c] = 1;
+    });
+  }
+  return counts;
+}
+
+
+/** Date keys for given array of { year, month }. */
+function getDateKeysFromMonths(months) {
+  var keys = [];
+  months.forEach(function (sm) {
+    var n = daysInMonth(sm.year, sm.month);
+    for (var d = 1; d <= n; d++) keys.push(dateKey(sm.year, sm.month, d));
+  });
+  return keys;
+}
+
+/** Date keys from start to end inclusive (dateKey format yyyy-mm-dd). */
+function dateKeysBetween(startDateKey, endDateKey) {
+  if (!startDateKey || !endDateKey || startDateKey > endDateKey) return [];
+  var keys = [];
+  var d = startDateKey;
+  while (d <= endDateKey) {
+    keys.push(d);
+    if (d === endDateKey) break;
+    d = addDaysToDateKey(d, 1);
+  }
+  return keys;
+}
+
+function getDailyLifeDateKeys() {
+  var start = (dailyLifeRangeStart || '').trim();
+  var end = (dailyLifeRangeEnd || '').trim();
+  if (!start || !end) {
+    var range = getCalendarDateRange();
+    start = range.startDateKey;
+    end = range.endDateKey;
+  }
+  if (start > end) return [];
+  return dateKeysBetween(start, end);
+}
+
+/** Bar chart: overall view by calendar range (Plan view range), no Daily Life filters. */
+function renderDailyLifeCategoryChart() {
+  var container = document.getElementById('dailyLifeCategoryChart');
+  if (!container) return;
+  var range = getCalendarDateRange();
+  var dateKeys = dateKeysBetween(range.startDateKey, range.endDateKey);
+  var dist = getCategoryDistributionForDateKeys(dateKeys);
+  var total = 0;
+  for (var id in dist) total += dist[id];
+  container.innerHTML = '';
+  if (total === 0) {
+    container.innerHTML = '<p class="text-xs text-ink-500">No events in calendar range.</p>';
+    return;
+  }
+  var categoryOrder = (state.categories || []).filter(function (c) { return c.id !== 'misogi' && c.id !== '8weekwin' && c.id !== 'winningheat'; });
+  var catIds = categoryOrder.map(function (c) { return c.id; });
+  var rest = Object.keys(dist).filter(function (id) { return catIds.indexOf(id) === -1 && dist[id] > 0; });
+  catIds = catIds.concat(rest);
+  catIds.forEach(function (catId) {
+    var count = dist[catId] || 0;
+    if (count === 0) return;
+    var cat = getCategory(catId);
+    var pct = Math.round((100 * count) / total);
+    var bar = document.createElement('div');
+    bar.className = 'daily-life-chart-row flex items-center gap-2 mb-1.5';
+    var label = document.createElement('span');
+    label.className = 'text-xs text-ink-700 w-20 shrink-0 truncate';
+    label.textContent = (cat && cat.label) ? cat.label : catId;
+    label.title = (cat && cat.label) ? cat.label : catId;
+    var track = document.createElement('div');
+    track.className = 'flex-1 min-w-0 h-4 bg-ink-100 rounded overflow-hidden';
+    var fill = document.createElement('div');
+    fill.className = 'daily-life-chart-bar h-full rounded';
+    fill.style.width = pct + '%';
+    fill.style.backgroundColor = (cat && cat.color) ? cat.color : '#94a3b8';
+    var countSpan = document.createElement('span');
+    countSpan.className = 'text-xs text-ink-500 w-6 text-right shrink-0';
+    countSpan.textContent = count;
+    track.appendChild(fill);
+    bar.appendChild(label);
+    bar.appendChild(track);
+    bar.appendChild(countSpan);
+    container.appendChild(bar);
+  });
+}
+
+function getEventForFlatItem(item) {
+  var list = state.events[item.dateKey];
+  return list && list[item.eventIndex] ? list[item.eventIndex] : null;
+}
+
+function applyDailyLifeFilters(flat) {
+  if (!flat.length) return flat;
+  return flat.filter(function (item) {
+    var ev = getEventForFlatItem(item);
+    if (!ev) return true;
+    if (dailyLifeFilterCategory && (ev.category || '') !== dailyLifeFilterCategory) return false;
+    if (dailyLifeFilterTag === 'waypost' && !isWaypostEvent(ev)) return false;
+    if (dailyLifeFilterTag === 'misogi' && !ev.isMisogi) return false;
+    return true;
+  });
+}
+
+/** One row per unique event (by eventId or single occurrence), using earliest date in range. */
+function consolidateDailyLifeFlat(flat) {
+  if (!flat.length) return flat;
+  var byKey = {};
+  flat.forEach(function (item) {
+    var ev = getEventForFlatItem(item);
+    var key = (ev && ev.eventId) ? ev.eventId : (item.dateKey + '|' + item.eventIndex);
+    if (!byKey[key] || item.dateKey < byKey[key].dateKey) byKey[key] = item;
+  });
+  var out = Object.keys(byKey).map(function (k) { return byKey[k]; });
+  out.sort(function (a, b) {
+    if (a.dateKey !== b.dateKey) return a.dateKey < b.dateKey ? -1 : 1;
+    return (a.title || '').localeCompare(b.title || '');
+  });
+  return out;
+}
+
+function renderDailyLifeFilterCategory() {
+  var sel = document.getElementById('dailyLifeFilterCategory');
+  if (!sel) return;
+  var cats = (state.categories || []).filter(function (c) { return c.id !== 'misogi' && c.id !== '8weekwin' && c.id !== 'winningheat'; });
+  sel.innerHTML = '<option value="">All</option>' + cats.map(function (c) {
+    return '<option value="' + escapeHtml(c.id) + '">' + escapeHtml(c.label || c.id) + '</option>';
+  }).join('');
+  sel.value = dailyLifeFilterCategory || '';
+}
+
+function renderDailyLifeFilterTagPills() {
+  var container = document.getElementById('dailyLifeFilterTagPills');
+  if (!container) return;
+  var pills = container.querySelectorAll('.daily-life-tag-pill');
+  pills.forEach(function (btn) {
+    var tag = btn.dataset.tag || '';
+    var on = dailyLifeFilterTag === tag;
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.className = 'daily-life-tag-pill rounded px-2 py-0.5 text-xs border transition-colors ' +
+      (on ? 'bg-ink-200 border-ink-300 text-ink-800' : 'bg-white border-ink-200 text-ink-600 hover:bg-ink-50');
+  });
+}
+
+function renderDailyLifeEventList() {
+  var container = document.getElementById('dailyLifeEventList');
+  if (!container) return;
+  var dateKeys = getDailyLifeDateKeys();
+  if (!CP.buildFlatEventsInRange || !CP.renderFlatEventList) {
+    container.innerHTML = '<p class="text-ink-500 text-xs">Loading…</p>';
+    return;
+  }
+  var flat = CP.buildFlatEventsInRange(dateKeys);
+  flat = applyDailyLifeFilters(flat);
+  flat = consolidateDailyLifeFlat(flat);
+  if (flat.length === 0) {
+    container.innerHTML = '<p class="text-ink-400 italic text-xs">No events match the selected filters.</p>';
+    return;
+  }
+  container.innerHTML = '<div class="space-y-1">' + CP.renderFlatEventList(flat) + '</div>';
+}
+
+function initDailyLifeRangeFromCalendar() {
+  if (dailyLifeRangeStart && dailyLifeRangeEnd) return;
+  var range = getCalendarDateRange();
+  dailyLifeRangeStart = range.startDateKey;
+  dailyLifeRangeEnd = range.endDateKey;
+}
+
+function syncDailyLifeRangeInputs() {
+  initDailyLifeRangeFromCalendar();
+  var startEl = document.getElementById('dailyLifeRangeStart');
+  var endEl = document.getElementById('dailyLifeRangeEnd');
+  if (startEl) startEl.value = dailyLifeRangeStart || '';
+  if (endEl) endEl.value = dailyLifeRangeEnd || '';
+}
+
+function renderDailyLifeSection() {
+  initDailyLifeRangeFromCalendar();
+  syncDailyLifeRangeInputs();
+  renderDailyLifeCategoryChart();
+  renderDailyLifeFilterCategory();
+  renderDailyLifeFilterTagPills();
+  renderDailyLifeEventList();
 }
 
 function getDeadSpaceMonths() {
@@ -687,6 +892,7 @@ function renderAuditDashboard() {
 
   renderWaypostCommandLog();
   renderGeneralSection();
+  renderDailyLifeSection();
   renderMisogiImages();
 }
 
@@ -837,6 +1043,65 @@ function auditInit() {
     });
   }
 
+  var dailyLifeToggle = document.getElementById('dailyLifeEventListToggle');
+  var dailyLifeContent = document.getElementById('dailyLifeEventListContent');
+  var dailyLifeToggleArrow = document.getElementById('dailyLifeEventListToggleArrow');
+  if (dailyLifeToggle && dailyLifeContent) {
+    dailyLifeToggle.addEventListener('click', function () {
+      var expanded = this.getAttribute('aria-expanded') === 'true';
+      dailyLifeContent.classList.toggle('daily-life-panel-collapsed', expanded);
+      this.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      if (dailyLifeToggleArrow) dailyLifeToggleArrow.style.transform = expanded ? 'rotate(-90deg)' : 'rotate(0deg)';
+    });
+  }
+
+  var dailyLifeRangeStartEl = document.getElementById('dailyLifeRangeStart');
+  var dailyLifeRangeEndEl = document.getElementById('dailyLifeRangeEnd');
+  if (dailyLifeRangeStartEl) {
+    dailyLifeRangeStartEl.addEventListener('change', function () {
+      dailyLifeRangeStart = (this.value || '').trim();
+      if (dailyLifeRangeEnd && dailyLifeRangeStart > dailyLifeRangeEnd) dailyLifeRangeEnd = dailyLifeRangeStart;
+      syncDailyLifeRangeInputs();
+      renderDailyLifeSection();
+    });
+  }
+  if (dailyLifeRangeEndEl) {
+    dailyLifeRangeEndEl.addEventListener('change', function () {
+      dailyLifeRangeEnd = (this.value || '').trim();
+      if (dailyLifeRangeStart && dailyLifeRangeEnd < dailyLifeRangeStart) dailyLifeRangeStart = dailyLifeRangeEnd;
+      syncDailyLifeRangeInputs();
+      renderDailyLifeSection();
+    });
+  }
+
+  var dailyLifeFilterCategoryEl = document.getElementById('dailyLifeFilterCategory');
+  if (dailyLifeFilterCategoryEl) {
+    dailyLifeFilterCategoryEl.addEventListener('change', function () {
+      dailyLifeFilterCategory = (this.value || '').trim();
+      renderDailyLifeEventList();
+    });
+  }
+  var dailyLifeFilterTagPillsEl = document.getElementById('dailyLifeFilterTagPills');
+  if (dailyLifeFilterTagPillsEl) {
+    dailyLifeFilterTagPillsEl.addEventListener('click', function (e) {
+      var pill = e.target.closest('.daily-life-tag-pill');
+      if (!pill) return;
+      dailyLifeFilterTag = pill.dataset.tag || '';
+      renderDailyLifeFilterTagPills();
+      renderDailyLifeEventList();
+    });
+  }
+  var dailyLifeEventList = document.getElementById('dailyLifeEventList');
+  if (dailyLifeEventList) {
+    dailyLifeEventList.addEventListener('click', function (e) {
+      var row = e.target.closest('.selected-date-event-row');
+      if (!row || !CP.openModal) return;
+      var dk = row.getAttribute('data-date-key');
+      var idx = row.getAttribute('data-event-index');
+      if (dk && idx !== null) CP.openModal(dk, parseInt(idx, 10), null);
+    });
+  }
+
   var waypostDeleteConfirmBtn = document.getElementById('waypostDeleteConfirmBtn');
   var waypostDeleteConfirmCancelBtn = document.getElementById('waypostDeleteConfirmCancelBtn');
   var waypostDeleteConfirmBackdrop = document.getElementById('waypostDeleteConfirmBackdrop');
@@ -848,6 +1113,7 @@ function auditInit() {
 function refreshTrackLists() {
   renderWaypostCommandLog();
   renderGeneralSection();
+  renderDailyLifeSection();
 }
 
 if (window.CalendarPlanner) {
