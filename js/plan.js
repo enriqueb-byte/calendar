@@ -1432,6 +1432,76 @@ function closeSettingsModal() {
   document.body.style.overflow = '';
 }
 
+function escapeIcalText(s) {
+  if (s == null || s === undefined) return '';
+  return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+function dateKeyToIcalDate(dateKeyStr) {
+  if (!dateKeyStr || dateKeyStr.length < 10) return '';
+  return dateKeyStr.slice(0, 4) + dateKeyStr.slice(5, 7) + dateKeyStr.slice(8, 10);
+}
+
+function exportToIcs() {
+  var occurrences = [];
+  for (var dk in state.events) {
+    var list = state.events[dk] || [];
+    list.forEach(function (ev, index) {
+      occurrences.push({ dateKey: dk, eventIndex: index });
+    });
+  }
+  if (occurrences.length === 0) {
+    if (typeof window.alert === 'function') window.alert('No events to export. Add events in Plan view first.');
+    return;
+  }
+  var consolidated = buildConsolidatedEvents(occurrences);
+  var dtstamp = new Date();
+  var y = dtstamp.getUTCFullYear();
+  var m = String(dtstamp.getUTCMonth() + 1).padStart(2, '0');
+  var d = String(dtstamp.getUTCDate()).padStart(2, '0');
+  var h = String(dtstamp.getUTCHours()).padStart(2, '0');
+  var min = String(dtstamp.getUTCMinutes()).padStart(2, '0');
+  var sec = String(dtstamp.getUTCSeconds()).padStart(2, '0');
+  var dtstampStr = y + m + d + 'T' + h + min + sec + 'Z';
+  var uidPrefix = 'myyear-' + Date.now() + '-';
+  var vevents = [];
+  consolidated.forEach(function (item, idx) {
+    var dateKeys = item.occurrences.map(function (o) { return o.dateKey; }).sort();
+    var ranges = groupIntoContiguousRanges(dateKeys);
+    var cat = getCategory(item.categoryId);
+    var catLabel = (cat && cat.label) ? cat.label : item.categoryId || '';
+    var description = 'Category: ' + catLabel;
+    ranges.forEach(function (range) {
+      var startIcal = dateKeyToIcalDate(range.start);
+      var endIcal = dateKeyToIcalDate(nextDayDateKey(range.end));
+      if (!startIcal || !endIcal) return;
+      var uid = uidPrefix + idx + '-' + range.start + '-' + range.end;
+      vevents.push(
+        'BEGIN:VEVENT\r\n' +
+        'UID:' + uid + '\r\n' +
+        'DTSTAMP:' + dtstampStr + '\r\n' +
+        'DTSTART;VALUE=DATE:' + startIcal + '\r\n' +
+        'DTEND;VALUE=DATE:' + endIcal + '\r\n' +
+        'SUMMARY:' + escapeIcalText(item.title || 'Event') + '\r\n' +
+        'DESCRIPTION:' + escapeIcalText(description) + '\r\n' +
+        'END:VEVENT\r\n'
+      );
+    });
+  });
+  var ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//My Year//Calendar Planner//EN\r\nCALSCALE:GREGORIAN\r\n' + vevents.join('') + 'END:VCALENDAR\r\n';
+  var blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = (state.title || 'My-Year').replace(/[^a-zA-Z0-9-_]/g, '-') + '-events.ics';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  closeSettingsModal();
+}
+
 function showSettingsResetPanel() {
   document.getElementById('settingsMenu').classList.add('hidden');
   document.getElementById('settingsResetPanel').classList.remove('hidden');
@@ -1846,8 +1916,14 @@ function planInit() {
     var desktopCalendarBtn = document.getElementById('desktopCalendarBtn');
     var mobileLegendBtn = document.getElementById('mobileLegendBtn');
     var desktopLegendBtn = document.getElementById('desktopLegendBtn');
-    if (mobileCalendarBtn) mobileCalendarBtn.addEventListener('click', function () { openSidebarDrawer('options'); });
-    if (desktopCalendarBtn) desktopCalendarBtn.addEventListener('click', function () { openSidebarDrawer('options'); });
+    if (mobileCalendarBtn) mobileCalendarBtn.addEventListener('click', function () {
+      if (state.viewMode !== 'plan' && typeof CP.switchView === 'function') CP.switchView('plan');
+      openSidebarDrawer('options');
+    });
+    if (desktopCalendarBtn) desktopCalendarBtn.addEventListener('click', function () {
+      if (state.viewMode !== 'plan' && typeof CP.switchView === 'function') CP.switchView('plan');
+      openSidebarDrawer('options');
+    });
     if (mobileLegendBtn) mobileLegendBtn.addEventListener('click', function () { openSidebarDrawer('legend'); });
     if (desktopLegendBtn) desktopLegendBtn.addEventListener('click', function () { openSidebarDrawer('legend'); });
     if (closeBtn) closeBtn.addEventListener('click', closeSidebarDrawer);
@@ -1857,6 +1933,11 @@ function planInit() {
 
   document.getElementById('settingsModalClose').addEventListener('click', closeSettingsModal);
   document.getElementById('settingsBackdrop').addEventListener('click', closeSettingsModal);
+  document.getElementById('settingsOptionTutorial').addEventListener('click', function () {
+    closeSettingsModal();
+    if (typeof CP.openTutorial === 'function') CP.openTutorial();
+  });
+  document.getElementById('settingsOptionExportCalendar').addEventListener('click', exportToIcs);
   document.getElementById('settingsOptionReset').addEventListener('click', showSettingsResetPanel);
   document.getElementById('settingsResetBack').addEventListener('click', showSettingsMenu);
   document.getElementById('settingsResetCancel').addEventListener('click', showSettingsMenu);
@@ -1968,4 +2049,5 @@ if (window.CalendarPlanner) {
   window.CalendarPlanner.openModal = openModal;
   window.CalendarPlanner.buildFlatEventsInRange = buildFlatEventsInRange;
   window.CalendarPlanner.renderFlatEventList = renderFlatEventList;
+  window.CalendarPlanner.exportToIcs = exportToIcs;
 }

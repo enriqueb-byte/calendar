@@ -1047,6 +1047,7 @@ function auditInit() {
   var dailyLifeContent = document.getElementById('dailyLifeEventListContent');
   var dailyLifeToggleArrow = document.getElementById('dailyLifeEventListToggleArrow');
   if (dailyLifeToggle && dailyLifeContent) {
+    if (dailyLifeToggleArrow && dailyLifeToggle.getAttribute('aria-expanded') === 'false') dailyLifeToggleArrow.style.transform = 'rotate(-90deg)';
     dailyLifeToggle.addEventListener('click', function () {
       var expanded = this.getAttribute('aria-expanded') === 'true';
       dailyLifeContent.classList.toggle('daily-life-panel-collapsed', expanded);
@@ -1054,6 +1055,23 @@ function auditInit() {
       if (dailyLifeToggleArrow) dailyLifeToggleArrow.style.transform = expanded ? 'rotate(-90deg)' : 'rotate(0deg)';
     });
   }
+
+  function bindAuditSectionToggle(btnId, contentId, arrowId) {
+    var btn = document.getElementById(btnId);
+    var content = document.getElementById(contentId);
+    var arrow = document.getElementById(arrowId);
+    if (!btn || !content) return;
+    if (arrow && btn.getAttribute('aria-expanded') === 'false') arrow.style.transform = 'rotate(-90deg)';
+    btn.addEventListener('click', function () {
+      var expanded = this.getAttribute('aria-expanded') === 'true';
+      content.classList.toggle('daily-life-panel-collapsed', expanded);
+      this.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      if (arrow) arrow.style.transform = expanded ? 'rotate(-90deg)' : 'rotate(0deg)';
+    });
+  }
+  bindAuditSectionToggle('dailyLifeSectionToggle', 'dailyLifeSectionContent', 'dailyLifeSectionToggleArrow');
+  bindAuditSectionToggle('waypostSectionToggle', 'waypostSectionContent', 'waypostSectionToggleArrow');
+  bindAuditSectionToggle('misogiSectionToggle', 'misogiSectionContent', 'misogiSectionToggleArrow');
 
   var dailyLifeRangeStartEl = document.getElementById('dailyLifeRangeStart');
   var dailyLifeRangeEndEl = document.getElementById('dailyLifeRangeEnd');

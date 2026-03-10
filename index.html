@@ -191,16 +191,18 @@
     <section id="view-audit" role="region" aria-label="Track" hidden>
       <div id="auditContent" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <!-- 1. Daily Life -->
-        <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-4 flex flex-col min-w-0" aria-labelledby="generalHeading">
-          <h2 id="generalHeading" class="text-sm font-bold text-ink-800 tracking-tight mb-2">Daily Life</h2>
-          <p class="text-xs text-ink-600 mb-2">Events by category—family, work, health, and more.</p>
-          <!-- Category bar chart (always visible) -->
+        <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-4 flex flex-col min-w-0">
+          <button type="button" id="dailyLifeSectionToggle" class="audit-section-toggle w-full flex flex-col items-start gap-0 py-1.5 text-left rounded transition-colors border-0 bg-transparent cursor-pointer hover:bg-ink-50" aria-expanded="true" aria-controls="dailyLifeSectionContent">
+            <span class="text-sm font-bold text-ink-800 hover:text-ink-700">Daily Life</span>
+            <span class="text-xs font-normal text-ink-600">Events by category—family, work, health, and more. <span id="dailyLifeSectionToggleArrow" class="inline-block transition-transform shrink-0" aria-hidden="true">▼</span></span>
+          </button>
+          <div id="dailyLifeSectionContent" class="daily-life-panel overflow-hidden mt-2">
+          <!-- Category bar chart -->
           <div id="dailyLifeCategoryChart" class="daily-life-chart mb-4" aria-label="Events by category"></div>
           <!-- Event list and date range (collapsible via heading) -->
           <div id="dailyLifeEventListPanel" class="mt-2" role="region" aria-label="Event list and date range">
-            <button type="button" id="dailyLifeEventListToggle" class="daily-life-heading-toggle w-full flex items-center justify-between gap-2 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded transition-colors border-0 bg-transparent cursor-pointer" aria-expanded="true" aria-controls="dailyLifeEventListContent">
-              <span>Events in selected range</span>
-              <span id="dailyLifeEventListToggleArrow" class="inline-block transition-transform shrink-0" aria-hidden="true">▼</span>
+            <button type="button" id="dailyLifeEventListToggle" class="daily-life-heading-toggle w-full flex items-center gap-1 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-ink-500 hover:text-ink-700 hover:bg-ink-50 rounded transition-colors border-0 bg-transparent cursor-pointer" aria-expanded="true" aria-controls="dailyLifeEventListContent">
+              <span>Events in selected range <span id="dailyLifeEventListToggleArrow" class="inline-block transition-transform shrink-0" aria-hidden="true">▼</span></span>
             </button>
             <div id="dailyLifeEventListContent" class="daily-life-panel overflow-hidden">
             <div class="daily-life-range-row flex flex-wrap items-center gap-2 mb-2 mt-1.5">
@@ -231,14 +233,15 @@
             </div>
           </div>
           <div id="generalByCategory" class="space-y-3 flex-1 min-h-0 overflow-auto hidden"></div>
+          </div>
         </section>
         <!-- 2. Mini-Adventures -->
         <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-4 flex flex-col min-w-0">
-          <h2 class="text-sm font-bold text-ink-800 tracking-tight mb-2 flex items-center gap-1.5">
-            <span class="audit-title-tooltip" data-tooltip="Mini-Adventures are pre-planned, non-negotiable events every 8 weeks to break routine and build memories.">Mini-Adventures</span>
-            <span class="event-tag-icon event-tag-icon-waypost flex-shrink-0 text-ink-600" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span>
-          </h2>
-          <p class="text-xs text-ink-600 mb-2">Pre-planned, non-negotiable events every 8 weeks to break routine.</p>
+          <button type="button" id="waypostSectionToggle" class="audit-section-toggle w-full flex flex-col items-start gap-0 py-1.5 text-left rounded transition-colors border-0 bg-transparent cursor-pointer hover:bg-ink-50" aria-expanded="true" aria-controls="waypostSectionContent">
+            <span class="text-sm font-bold text-ink-800 hover:text-ink-700 flex items-center gap-1.5"><span class="audit-title-tooltip" data-tooltip="Mini-Adventures are pre-planned, non-negotiable events every 8 weeks to break routine and build memories.">Mini-Adventures</span><span class="event-tag-icon event-tag-icon-waypost inline-block w-2.5 h-2.5 text-ink-600" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></span></span>
+            <span class="text-xs font-normal text-ink-600">Pre-planned, non-negotiable events every 8 weeks to break routine. <span id="waypostSectionToggleArrow" class="inline-block transition-transform shrink-0" aria-hidden="true">▼</span></span>
+          </button>
+          <div id="waypostSectionContent" class="daily-life-panel overflow-hidden mt-2">
           <div id="waypostCommandLog" class="space-y-2 flex-1 min-h-0 flex flex-col">
             <div id="waypostCommandLogSummary" class="grid grid-cols-3 gap-1.5 text-xs">
               <div class="rounded border border-ink-200 bg-ink-50/50 px-2 py-1">
@@ -265,14 +268,15 @@
               </div>
             </div>
           </div>
+          </div>
         </section>
         <!-- 3. Misogi -->
         <section class="bg-white rounded-xl border border-ink-200 shadow-sm p-4 flex flex-col min-w-0">
-          <h2 class="text-sm font-bold text-ink-800 tracking-tight mb-2 flex items-center gap-1.5">
-            <span class="audit-title-tooltip" data-tooltip="Misogi is a single, massive, once-a-year challenge designed to redefine your limits.">Misogi</span>
-            <span class="event-tag-icon event-tag-icon-misogi flex-shrink-0 text-ink-600" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5"><path d="M12 2L2 22h20L12 2zm0 4.5l5.5 9.5h-11L12 6.5z"/></svg></span>
-          </h2>
-          <p class="text-xs text-ink-600 mb-2">One big annual challenge—hard, safe, outside routine.</p>
+          <button type="button" id="misogiSectionToggle" class="audit-section-toggle w-full flex flex-col items-start gap-0 py-1.5 text-left rounded transition-colors border-0 bg-transparent cursor-pointer hover:bg-ink-50" aria-expanded="true" aria-controls="misogiSectionContent">
+            <span class="text-sm font-bold text-ink-800 hover:text-ink-700 flex items-center gap-1.5"><span class="audit-title-tooltip" data-tooltip="Misogi is a single, massive, once-a-year challenge designed to redefine your limits.">Misogi</span><span class="event-tag-icon event-tag-icon-misogi inline-block w-2.5 h-2.5 text-ink-600" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5"><path d="M12 2L2 22h20L12 2zm0 4.5l5.5 9.5h-11L12 6.5z"/></svg></span></span>
+            <span class="text-xs font-normal text-ink-600">One big annual challenge—hard, safe, outside routine. <span id="misogiSectionToggleArrow" class="inline-block transition-transform shrink-0" aria-hidden="true">▼</span></span>
+          </button>
+          <div id="misogiSectionContent" class="daily-life-panel overflow-hidden mt-2">
           <div class="flex flex-wrap items-end gap-2 mb-2">
             <div class="flex-1 min-w-0">
               <label for="misogiChallengeInput" class="block text-xs font-medium text-ink-700 mb-0.5">Challenge</label>
@@ -302,6 +306,7 @@
               <button type="button" id="misogiImagesAddBtn" class="shrink-0 w-5 h-5 rounded border border-ink-200 text-ink-600 text-xs leading-none flex items-center justify-center hover:bg-ink-50 transition-colors" aria-label="Add image">+</button>
             </div>
             <div id="misogiImagesPreview" class="grid gap-1 max-h-28 overflow-hidden rounded border border-ink-200 bg-ink-50/30 min-h-[3rem]"></div>
+          </div>
           </div>
         </section>
       </div>
@@ -551,6 +556,8 @@
         <div class="p-4 pt-3">
         <div id="settingsMenu" class="settings-panel">
           <ul class="space-y-1" role="menu">
+            <li><button type="button" id="settingsOptionTutorial" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-ink-700 hover:bg-ink-50 transition-colors" role="menuitem">How it works</button></li>
+            <li><button type="button" id="settingsOptionExportCalendar" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-ink-700 hover:bg-ink-50 transition-colors" role="menuitem">Export for Google Calendar</button></li>
             <li><button type="button" id="settingsOptionReset" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-amber-700 hover:bg-amber-50 transition-colors" role="menuitem">Reset (Caution – Deletes Data)</button></li>
           </ul>
         </div>
@@ -563,6 +570,36 @@
             <button type="button" id="settingsResetCancel" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Cancel</button>
           </div>
         </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tutorial / How it works modal -->
+  <div id="tutorialModal" class="fixed inset-0 z-50 hidden no-print" aria-hidden="true" role="dialog" aria-labelledby="tutorialTitle" aria-modal="true">
+    <div class="absolute inset-0 bg-ink-900/50 backdrop-blur-sm" id="tutorialBackdrop"></div>
+    <div id="tutorialOverlay" class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+      <div class="tutorial-modal-card relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-ink-200 pointer-events-auto max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between p-4 pb-0 flex-shrink-0">
+          <h2 id="tutorialTitle" class="text-lg font-semibold text-ink-900">Welcome to My Year</h2>
+          <button type="button" id="tutorialModalClose" class="rounded-lg p-2 text-ink-500 hover:bg-ink-100 hover:text-ink-700 transition-colors -mr-2" aria-label="Close">✕</button>
+        </div>
+        <div class="p-4 pt-3 flex-1 min-h-0 overflow-y-auto">
+          <div id="tutorialStep1" class="tutorial-step">
+            <p class="text-sm text-ink-600 mb-4">Your calendar is your life's resume, but most are just cluttered noise reacting to the world's invitations.<br><br>Use this tool to plan your year from a blank slate and identify what matters to you most.</p>
+          </div>
+          <div id="tutorialStep2" class="tutorial-step hidden">
+            <p class="text-sm text-ink-600 mb-3"><strong class="text-ink-800">Plan</strong> events, mini-adventures, and your Misogi.</p>
+            <p class="text-sm text-ink-600 mb-3"><strong class="text-ink-800">Track</strong> your progress throughout the year.</p>
+            <p class="text-sm text-ink-600"><strong class="text-ink-800">Reflect</strong> on your life and how you want to spend your years.</p>
+          </div>
+        </div>
+        <div class="p-4 pt-3 flex-shrink-0 flex items-center justify-center gap-2 border-t border-ink-100">
+          <div class="flex items-center gap-2">
+            <button type="button" id="tutorialBack" class="hidden px-3 py-2 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-ink-50 transition-colors">Back</button>
+            <button type="button" id="tutorialNext" class="px-3 py-2 rounded-lg bg-ink-800 text-white text-sm font-medium hover:bg-ink-700 transition-colors">Next</button>
+            <button type="button" id="tutorialDone" class="hidden px-3 py-2 rounded-lg bg-ink-800 text-white text-sm font-medium hover:bg-ink-700 transition-colors">Begin</button>
+          </div>
         </div>
       </div>
     </div>
