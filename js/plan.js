@@ -1515,6 +1515,8 @@ function showSettingsOpenFromUrlPanel() {
   document.getElementById('settingsOpenFromUrlPanel').classList.remove('hidden');
   document.getElementById('settingsOpenFromUrlMessage').textContent = '';
   document.getElementById('settingsOpenFromUrlInput').value = '';
+  var fileInput = document.getElementById('settingsOpenFromFileInput');
+  if (fileInput) fileInput.value = '';
 }
 
 function showSettingsMenu() {
@@ -1543,6 +1545,21 @@ function downloadBackup() {
   closeSettingsModal();
 }
 
+function applyBackupData(data, messageEl) {
+  if (!data || typeof data !== 'object') throw new Error('Invalid backup format.');
+  var events = data.events && typeof data.events === 'object' ? data.events : {};
+  var prefs = data.prefs && typeof data.prefs === 'object' ? data.prefs : {};
+  var categories = Array.isArray(data.categories) ? data.categories : [];
+  localStorage.setItem(CP.STORAGE_KEY, JSON.stringify(events));
+  localStorage.setItem(CP.PREFS_KEY, JSON.stringify(prefs));
+  localStorage.setItem(CP.CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
+  if (messageEl) {
+    messageEl.textContent = 'Loaded. Reloading…';
+    messageEl.className = 'text-sm mb-3 min-h-[1.25rem] text-green-700';
+  }
+  setTimeout(function () { location.reload(); }, 300);
+}
+
 function loadFromUrl() {
   var input = document.getElementById('settingsOpenFromUrlInput');
   var messageEl = document.getElementById('settingsOpenFromUrlMessage');
@@ -1562,23 +1579,39 @@ function loadFromUrl() {
       if (!res.ok) throw new Error('Could not load file: ' + res.status);
       return res.json();
     })
-    .then(function (data) {
-      if (!data || typeof data !== 'object') throw new Error('Invalid backup format.');
-      var events = data.events && typeof data.events === 'object' ? data.events : {};
-      var prefs = data.prefs && typeof data.prefs === 'object' ? data.prefs : {};
-      var categories = Array.isArray(data.categories) ? data.categories : [];
-      localStorage.setItem(CP.STORAGE_KEY, JSON.stringify(events));
-      localStorage.setItem(CP.PREFS_KEY, JSON.stringify(prefs));
-      localStorage.setItem(CP.CATEGORIES_STORAGE_KEY, JSON.stringify(categories));
-      messageEl.textContent = 'Loaded. Reloading…';
-      messageEl.className = 'text-sm mb-3 min-h-[1.25rem] text-green-700';
-      setTimeout(function () { location.reload(); }, 300);
-    })
+    .then(function (data) { applyBackupData(data, messageEl); })
     .catch(function (err) {
       messageEl.textContent = err.message || 'Failed to load from URL.';
       messageEl.className = 'text-sm mb-3 min-h-[1.25rem] text-red-600';
       if (loadBtn) loadBtn.disabled = false;
     });
+}
+
+function loadFromFile(file) {
+  var messageEl = document.getElementById('settingsOpenFromUrlMessage');
+  if (!file) return;
+  messageEl.textContent = 'Loading…';
+  messageEl.className = 'text-sm mb-3 min-h-[1.25rem] text-ink-600';
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      var data = JSON.parse(reader.result);
+      applyBackupData(data, messageEl);
+    } catch (err) {
+      messageEl.textContent = err.message || 'Invalid backup file.';
+      messageEl.className = 'text-sm mb-3 min-h-[1.25rem] text-red-600';
+    }
+  };
+  reader.onerror = function () {
+    messageEl.textContent = 'Could not read file.';
+    messageEl.className = 'text-sm mb-3 min-h-[1.25rem] text-red-600';
+  };
+  reader.readAsText(file);
+}
+
+function openFromFilePick() {
+  var input = document.getElementById('settingsOpenFromFileInput');
+  if (input) input.click();
 }
 
 function resetToDefaults() {
@@ -2014,6 +2047,11 @@ function planInit() {
   document.getElementById('settingsOpenFromUrlLoad').addEventListener('click', loadFromUrl);
   document.getElementById('settingsOpenFromUrlInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); loadFromUrl(); }
+  });
+  document.getElementById('settingsOpenFromFileBtn').addEventListener('click', openFromFilePick);
+  document.getElementById('settingsOpenFromFileInput').addEventListener('change', function () {
+    var file = this.files && this.files[0];
+    if (file) loadFromFile(file);
   });
   document.getElementById('settingsOptionReset').addEventListener('click', showSettingsResetPanel);
   document.getElementById('settingsResetBack').addEventListener('click', showSettingsMenu);

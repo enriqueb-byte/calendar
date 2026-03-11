@@ -277,16 +277,16 @@
             <span class="text-xs font-normal text-ink-600">One big annual challenge—hard, safe, outside routine. <span id="misogiSectionToggleArrow" class="inline-block transition-transform shrink-0" aria-hidden="true">▼</span></span>
           </button>
           <div id="misogiSectionContent" class="daily-life-panel overflow-hidden mt-2">
-          <div class="flex flex-wrap items-end gap-2 mb-2">
-            <div class="flex-1 min-w-0">
+          <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-2 mb-2">
+            <div class="w-full sm:flex-1 sm:min-w-0">
               <label for="misogiChallengeInput" class="block text-xs font-medium text-ink-700 mb-0.5">Challenge</label>
               <input type="text" id="misogiChallengeInput" placeholder="e.g. Run 5k under 30 min" class="w-full px-2 py-1.5 rounded border border-ink-200 text-ink-900 placeholder-ink-400 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 text-sm" />
             </div>
-            <div class="shrink-0 w-28">
+            <div class="w-full sm:w-28 sm:shrink-0">
               <label for="misogiTargetDate" class="block text-xs font-medium text-ink-700 mb-0.5">Target date</label>
               <input type="date" id="misogiTargetDate" class="w-full px-2 py-1.5 rounded border border-ink-200 text-ink-900 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 text-sm" aria-label="Misogi target date" />
             </div>
-            <div class="shrink-0 w-20">
+            <div class="w-full sm:w-20 sm:shrink-0">
               <span id="misogiCountdownLabel" class="block text-xs font-medium text-ink-700 mb-0.5">Left</span>
               <div id="misogiCountdownBig" class="w-full px-2 py-1.5 rounded border border-ink-200 bg-ink-50/50 text-ink-900 text-xs min-h-[2rem] flex items-center">—</div>
             </div>
@@ -323,20 +323,20 @@
             </button>
             <div id="lifeFactsContent" class="overflow-hidden" role="region" aria-labelledby="lifeFactsToggleLabel">
               <p class="text-xs text-ink-500 mb-3">These inputs populate the rest of the Reflect tab.</p>
-              <div class="flex flex-wrap items-end gap-3 mb-4">
-                <div class="min-w-0 flex-1" style="min-width: 7rem;">
+              <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 mb-4">
+                <div class="w-full sm:flex-1 sm:min-w-0 min-w-0">
                   <label for="lifeDateOfBirth" class="block text-xs font-medium text-ink-700 mb-0.5">Date of birth</label>
                   <input type="date" id="lifeDateOfBirth" class="w-full px-2 py-1.5 rounded border border-ink-200 text-ink-900 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500" aria-label="Date of birth" />
                 </div>
-                <div class="min-w-0" style="width: 5.5rem;">
+                <div class="w-full sm:w-[5.5rem] min-w-0">
                   <label for="lifeGender" class="block text-xs font-medium text-ink-700 mb-0.5">Gender</label>
                   <select id="lifeGender" class="w-full px-2 py-1.5 rounded border border-ink-200 text-ink-900 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 bg-white" aria-label="Gender">
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                   </select>
                 </div>
-                <div class="min-w-0 flex items-end gap-1.5">
-                  <div style="width: 3.5rem;">
+                <div class="w-full sm:w-auto min-w-0 flex flex-wrap items-end gap-1.5">
+                  <div class="w-full sm:w-14 min-w-0">
                     <label for="lifeExpectancyInput" class="block text-xs font-medium text-ink-700 mb-0.5">Expectancy</label>
                     <input type="number" id="lifeExpectancyInput" class="w-full px-2 py-1.5 rounded border border-ink-200 text-ink-900 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 disabled:bg-ink-50 disabled:text-ink-500" min="1" max="120" step="1" placeholder="76" aria-label="Life expectancy (years)" />
                   </div>
@@ -565,12 +565,16 @@
         </div>
         <div id="settingsOpenFromUrlPanel" class="settings-panel hidden">
           <button type="button" id="settingsOpenFromUrlBack" class="mb-3 text-sm text-ink-500 hover:text-ink-700 flex items-center gap-1">← Back</button>
-          <h3 class="text-lg font-semibold text-ink-900 mb-2">Open from URL</h3>
-          <p class="text-sm text-ink-600 mb-3">Paste a direct link to a calendar backup file (from Google Drive, Dropbox, etc.). Use “Download backup” on another device, upload the file, then paste its link here.</p>
+          <h3 class="text-lg font-semibold text-ink-900 mb-2">Open from URL or file</h3>
+          <p class="text-sm text-ink-600 mb-3">Load a calendar backup from a link or from a JSON file on your device (from “Download backup”).</p>
           <input type="url" id="settingsOpenFromUrlInput" placeholder="https://..." class="w-full px-3 py-2 rounded-lg border border-ink-200 text-ink-900 placeholder-ink-400 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 text-sm mb-2" />
+          <div class="flex gap-2 mb-3">
+            <button type="button" id="settingsOpenFromUrlLoad" class="flex-1 px-4 py-2.5 rounded-lg bg-ink-800 text-white text-sm font-medium hover:bg-ink-700">Load from URL</button>
+            <input type="file" id="settingsOpenFromFileInput" accept=".json,application/json" class="sr-only" aria-label="Choose backup file" />
+            <button type="button" id="settingsOpenFromFileBtn" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm font-medium hover:bg-ink-50">Choose file</button>
+          </div>
           <p id="settingsOpenFromUrlMessage" class="text-sm mb-3 min-h-[1.25rem]" aria-live="polite"></p>
           <div class="flex gap-2">
-            <button type="button" id="settingsOpenFromUrlLoad" class="flex-1 px-4 py-2.5 rounded-lg bg-ink-800 text-white text-sm font-medium hover:bg-ink-700">Load</button>
             <button type="button" id="settingsOpenFromUrlCancel" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Cancel</button>
           </div>
         </div>
