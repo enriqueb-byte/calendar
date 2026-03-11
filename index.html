@@ -558,8 +558,21 @@
           <ul class="space-y-1" role="menu">
             <li><button type="button" id="settingsOptionTutorial" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-ink-700 hover:bg-ink-50 transition-colors" role="menuitem">How it works</button></li>
             <li><button type="button" id="settingsOptionExportCalendar" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-ink-700 hover:bg-ink-50 transition-colors" role="menuitem">Export for Google Calendar</button></li>
+            <li><button type="button" id="settingsOptionDownloadBackup" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-ink-700 hover:bg-ink-50 transition-colors" role="menuitem">Download backup</button></li>
+            <li><button type="button" id="settingsOptionOpenFromUrl" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-ink-700 hover:bg-ink-50 transition-colors" role="menuitem">Open from URL</button></li>
             <li><button type="button" id="settingsOptionReset" class="settings-option w-full text-left px-3 py-2.5 rounded-lg text-amber-700 hover:bg-amber-50 transition-colors" role="menuitem">Reset (Caution – Deletes Data)</button></li>
           </ul>
+        </div>
+        <div id="settingsOpenFromUrlPanel" class="settings-panel hidden">
+          <button type="button" id="settingsOpenFromUrlBack" class="mb-3 text-sm text-ink-500 hover:text-ink-700 flex items-center gap-1">← Back</button>
+          <h3 class="text-lg font-semibold text-ink-900 mb-2">Open from URL</h3>
+          <p class="text-sm text-ink-600 mb-3">Paste a direct link to a calendar backup file (from Google Drive, Dropbox, etc.). Use “Download backup” on another device, upload the file, then paste its link here.</p>
+          <input type="url" id="settingsOpenFromUrlInput" placeholder="https://..." class="w-full px-3 py-2 rounded-lg border border-ink-200 text-ink-900 placeholder-ink-400 focus:ring-2 focus:ring-accent-500 focus:border-accent-500 text-sm mb-2" />
+          <p id="settingsOpenFromUrlMessage" class="text-sm mb-3 min-h-[1.25rem]" aria-live="polite"></p>
+          <div class="flex gap-2">
+            <button type="button" id="settingsOpenFromUrlLoad" class="flex-1 px-4 py-2.5 rounded-lg bg-ink-800 text-white text-sm font-medium hover:bg-ink-700">Load</button>
+            <button type="button" id="settingsOpenFromUrlCancel" class="px-4 py-2.5 rounded-lg border border-ink-200 text-ink-600 text-sm hover:bg-ink-100">Cancel</button>
+          </div>
         </div>
         <div id="settingsResetPanel" class="settings-panel hidden">
           <button type="button" id="settingsResetBack" class="mb-3 text-sm text-ink-500 hover:text-ink-700 flex items-center gap-1">← Back</button>
